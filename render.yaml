@@ -20,9 +20,8 @@ services:
   - type: web
     name: ks1-trade-id-web
     env: static
-    # REMOVED: region (Static sites are global)
-    # REMOVED: plan (Static sites don't use plan in this context)
-    buildCommand: cd client && npm install && npm run build
+    # No region or plan for static sites
+    buildCommand: cd client && npm ci && npm run build
     staticPublishPath: ./client/dist
     headers:
       - path: /*

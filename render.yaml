@@ -12,17 +12,16 @@ services:
         value: production
       - key: PORT
         value: 5000
-      # IMPORTANT: You must add MONGO_URI manually in the Render Dashboard after connecting GitHub
+      # IMPORTANT: You must add MONGO_URI manually in the Render Dashboard
       - key: MONGO_URI
         sync: false 
 
   # 2. Frontend Static Site Service
-  # FIX: Changed type from 'static' to 'web' and kept staticPublishPath
   - type: web
     name: ks1-trade-id-web
     env: static
-    region: oregon
-    plan: free
+    # REMOVED: region (Static sites are global)
+    # REMOVED: plan (Static sites don't use plan in this context)
     buildCommand: cd client && npm install && npm run build
     staticPublishPath: ./client/dist
     headers:

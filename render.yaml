@@ -1,0 +1,35 @@
+services:
+  # 1. Backend API Service
+  - type: web
+    name: ks1-trade-id-api
+    env: node
+    region: oregon
+    plan: free
+    buildCommand: cd server && npm install
+    startCommand: cd server && node index.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 5000
+      # IMPORTANT: You must add MONGO_URI manually in the Render Dashboard after connecting GitHub
+      - key: MONGO_URI
+        sync: false 
+
+  # 2. Frontend Static Site Service
+  - type: static
+    name: ks1-trade-id-web
+    env: static
+    region: oregon
+    buildCommand: cd client && npm install && npm run build
+    staticPublishPath: ./client/dist
+    headers:
+      - path: /*
+        name: X-Frame-Options
+        value: SAMEORIGIN
+    envVars:
+      - key: VITE_API_URL
+        fromService:
+          name: ks1-trade-id-api
+          type: web
+          envVarKey: RENDER_EXTERNAL_URL

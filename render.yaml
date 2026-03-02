@@ -17,10 +17,12 @@ services:
         sync: false 
 
   # 2. Frontend Static Site Service
-  - type: static
+  # FIX: Changed type from 'static' to 'web' and kept staticPublishPath
+  - type: web
     name: ks1-trade-id-web
     env: static
     region: oregon
+    plan: free
     buildCommand: cd client && npm install && npm run build
     staticPublishPath: ./client/dist
     headers:

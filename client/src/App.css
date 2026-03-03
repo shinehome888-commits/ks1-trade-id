@@ -1,6 +1,6 @@
 :root {
-  --bg-deep: #0f172a; /* Deep Navy Blue Background */
-  --bg-card: #1e293b; /* Slightly lighter card bg */
+  --bg-deep: #0f172a;
+  --bg-card: #1e293b;
   --gold-primary: #FFD700;
   --gold-glow: rgba(255, 215, 0, 0.4);
   --text-main: #f8fafc;
@@ -24,14 +24,25 @@ body {
   color: var(--text-main);
   min-height: 100vh;
   display: flex;
-  justify-content: center;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* Ensure content pushes footer down */
+#root {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  width: 100%;
 }
 
 .container {
   width: 100%;
   max-width: 1200px;
   padding: 2rem;
+  flex: 1; /* Pushes footer down */
   animation: fadeIn 0.5s ease-in;
+  margin: 0 auto;
 }
 
 @keyframes fadeIn {
@@ -39,20 +50,34 @@ body {
   to { opacity: 1; transform: translateY(0); }
 }
 
-/* --- Typography --- */
-h1, h2, h3 {
-  font-weight: 800;
-  letter-spacing: -0.5px;
-  margin-top: 0;
-  text-transform: uppercase;
+/* --- 3D Centered Headers --- */
+.page-header {
+  text-align: center;
+  margin-bottom: 2.5rem;
+  position: relative;
 }
 
-h1 {
-  font-size: 2.2rem;
-  background: linear-gradient(to right, #fff, var(--gold-primary));
+.page-header h1 {
+  font-size: 3rem;
+  font-weight: 900;
+  margin: 0;
+  background: linear-gradient(135deg, #fff 0%, var(--gold-primary) 50%, #fff 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
-  text-shadow: 0 4px 10px rgba(0,0,0,0.3);
+  text-shadow: 0 10px 20px rgba(0,0,0,0.5);
+  letter-spacing: -1px;
+  display: inline-block;
+  filter: drop-shadow(0 4px 0 rgba(0,0,0,0.3));
+}
+
+.page-header p {
+  color: var(--gold-primary);
+  font-size: 1.2rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin-top: 10px;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.5);
 }
 
 /* --- Cards --- */
@@ -75,7 +100,7 @@ h1 {
   background: linear-gradient(90deg, var(--gold-primary), #fff, var(--gold-primary));
 }
 
-/* --- THE NEW WHITE 3D BUTTONS --- */
+/* --- White 3D Buttons --- */
 .btn-gold {
   background: var(--white-btn);
   color: #0f172a;
@@ -87,12 +112,9 @@ h1 {
   cursor: pointer;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  
-  /* The 3D Effect */
   box-shadow: var(--shadow-3d);
   transform: translateY(0);
   transition: all 0.15s ease;
-  
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -102,8 +124,6 @@ h1 {
 .btn-gold:hover {
   transform: translateY(-2px);
   box-shadow: 0 8px 0 #cbd5e1, 0 12px 12px rgba(0,0,0,0.3);
-  background: #fff;
-  color: #000;
 }
 
 .btn-gold:active {
@@ -118,17 +138,10 @@ h1 {
   box-shadow: 0 4px 0 #cbd5e1;
 }
 
-/* Specific Button Variants */
 .btn-danger {
   background: #fff;
   color: var(--danger);
   box-shadow: 0 6px 0 #e2e8f0, 0 10px 10px rgba(0,0,0,0.2);
-}
-.btn-danger:hover {
-  box-shadow: 0 8px 0 #e2e8f0;
-}
-.btn-danger:active {
-  box-shadow: 0 2px 0 #e2e8f0;
 }
 
 .btn-group {
@@ -136,9 +149,10 @@ h1 {
   gap: 12px;
   flex-wrap: wrap;
   margin-top: 1.5rem;
+  justify-content: center; /* Center buttons */
 }
 
-/* --- Inputs --- */
+/* --- Inputs & Selects --- */
 input, select {
   width: 100%;
   padding: 16px;
@@ -167,19 +181,11 @@ input:focus, select:focus {
   text-transform: uppercase;
   letter-spacing: 1px;
   box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+  display: inline-block;
 }
 
-.badge-eligible { 
-  background: var(--success); 
-  color: #fff; 
-  border: 2px solid #059669;
-}
-
-.badge-not-eligible { 
-  background: var(--danger); 
-  color: #fff; 
-  border: 2px solid #b91c1c;
-}
+.badge-eligible { background: var(--success); color: #fff; border: 2px solid #059669; }
+.badge-not-eligible { background: var(--danger); color: #fff; border: 2px solid #b91c1c; }
 
 /* --- Metrics Grid --- */
 .metrics-grid {
@@ -222,7 +228,39 @@ input:focus, select:focus {
   display: block;
 }
 
-/* --- Admin Table Redesign --- */
+/* --- Funding Status Box (Centered & Stylish) --- */
+.funding-status-box {
+  background: rgba(0,0,0,0.3);
+  padding: 2rem;
+  border-radius: 16px;
+  text-align: center;
+  border: 2px solid var(--gold-primary);
+  box-shadow: 0 0 30px rgba(255, 215, 0, 0.15);
+  min-width: 280px;
+}
+
+.funding-title {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin-bottom: 1rem;
+  font-weight: 700;
+}
+
+.funding-requirements {
+  margin-top: 1rem;
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  line-height: 1.8;
+  text-align: left;
+  display: inline-block;
+  background: rgba(255,255,255,0.05);
+  padding: 10px 15px;
+  border-radius: 8px;
+}
+
+/* --- Admin Table --- */
 .table-container {
   overflow-x: auto;
   border-radius: 12px;
@@ -258,13 +296,7 @@ td {
   font-size: 0.95rem;
 }
 
-tr:last-child td {
-  border-bottom: none;
-}
-
-tr:hover td {
-  background: rgba(255,255,255,0.02);
-}
+tr:hover td { background: rgba(255,255,255,0.02); }
 
 .trade-id-cell {
   color: #fff;
@@ -274,7 +306,83 @@ tr:hover td {
   letter-spacing: 1px;
 }
 
-/* --- Utilities --- */
+/* --- Transaction Ledger (New) --- */
+.ledger-container {
+  margin-top: 2rem;
+  background: rgba(0,0,0,0.2);
+  border-radius: 12px;
+  padding: 1.5rem;
+  border: 1px solid rgba(255,255,255,0.05);
+}
+
+.ledger-title {
+  color: var(--gold-primary);
+  font-size: 1.2rem;
+  font-weight: 800;
+  margin-bottom: 1rem;
+  text-transform: uppercase;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+  padding-bottom: 10px;
+}
+
+.ledger-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.ledger-table th {
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  padding: 10px;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+  text-align: left;
+}
+
+.ledger-table td {
+  padding: 12px 10px;
+  border-bottom: 1px solid rgba(255,255,255,0.02);
+  color: #fff;
+}
+
+.txn-positive { color: var(--success); font-weight: 700; }
+.txn-negative { color: var(--danger); font-weight: 700; }
+.txn-neutral { color: var(--text-muted); }
+
+/* --- Global Footer (Trademark) --- */
+.global-footer {
+  width: 100%;
+  background: #020617;
+  border-top: 1px solid rgba(255, 215, 0, 0.2);
+  padding: 2rem 1rem;
+  text-align: center;
+  margin-top: auto; /* Pushes to bottom */
+}
+
+.footer-content {
+  max-width: 1200px;
+  margin: 0 auto;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+
+.footer-brand {
+  color: var(--gold-primary);
+  font-weight: 800;
+  font-size: 1rem;
+  margin-bottom: 0.5rem;
+  display: block;
+}
+
+.footer-text {
+  font-size: 0.85rem;
+  max-width: 800px;
+  margin: 0 auto;
+  opacity: 0.8;
+}
+
+/* Utilities */
 .error-msg {
   color: var(--danger);
   background: rgba(239, 68, 68, 0.1);
@@ -293,11 +401,11 @@ hr {
   margin: 2rem 0;
 }
 
-/* Responsive */
 @media (max-width: 768px) {
   .container { padding: 1rem; }
   .card { padding: 1.5rem; }
-  h1 { font-size: 1.8rem; }
+  .page-header h1 { font-size: 2rem; }
   .btn-group { flex-direction: column; }
   .btn-gold { width: 100%; }
+  .funding-status-box { width: 100%; }
 }

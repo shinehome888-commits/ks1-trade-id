@@ -1,28 +1,20 @@
 import { useState, useEffect } from 'react'
 import './App.css'
 
-// === KS1 BRAND COLORS (also add to App.css) ===
-// --ks1-blue: #051024 | --ks1-light-blue: #0a1f3d | --ks1-gold: #FFD700
-
 function App() {
-  const [currentPage, setCurrentPage] = useState('landing') // landing, register, user-dashboard, admin-dashboard
+  const [currentPage, setCurrentPage] = useState('landing')
   const [user, setUser] = useState(null)
-  const [isAdmin, setIsAdmin] = useState(false)
   const [transactions, setTransactions] = useState([])
   const [fundingStatus, setFundingStatus] = useState({ eligible: true, score: 85, volume: 2450, disputes: 2 })
 
-  // Simulate real-time refresh
+  // === REAL-TIME REFRESH FUNCTION ===
   const handleRefresh = () => {
-    // In real app: fetch('/api/refresh') or similar
-    setTransactions(prev => [...prev]) // trigger re-render
-    console.log('✓ Dashboard refreshed - real-time updates loaded')
+    window.location.reload()
   }
 
-  // Load transactions from your backend (replace with actual fetch)
+  // === LOAD TRANSACTIONS ===
   useEffect(() => {
     if (currentPage === 'user-dashboard' && user) {
-      // fetch(`/api/transactions/${user.id}`).then(res => res.json()).then(setTransactions)
-      // Demo data:
       setTransactions([
         { id: 1, date: '2026-03-02', type: 'Credit', description: 'Trade Settlement #KS1-9921', amount: 3250.00 },
         { id: 2, date: '2026-03-01', type: 'Debit', description: 'Platform Service Fee', amount: -95.00 },
@@ -73,7 +65,6 @@ function App() {
 
     const handleSubmit = (e) => {
       e.preventDefault()
-      // Send to your backend: fetch('/api/register', { method: 'POST', body: JSON.stringify(formData) })
       alert('✓ Registration submitted! Welcome to KS1 Trade ID.')
       setCurrentPage('user-dashboard')
       setUser({ name: formData.fullname, category: formData.category })
@@ -119,7 +110,6 @@ function App() {
   // === USER DASHBOARD ===
   const UserDashboard = () => (
     <div className="page-container">
-      {/* Header with Refresh */}
       <header className="dashboard-header">
         <h2>KS1 Trade ID</h2>
         <button className="btn-refresh btn-3d-white" onClick={handleRefresh} title="Refresh for real-time updates">
@@ -127,15 +117,12 @@ function App() {
         </button>
       </header>
 
-      {/* Centered 3D Title */}
       <div className="dashboard-title-wrap">
         <h1 className="dashboard-title-3d">My Dashboard</h1>
       </div>
 
-      {/* Main Content Grid */}
       <div className="dashboard-grid">
         
-        {/* Funding Status Panel */}
         <div className="panel ks1-panel">
           <h3>Funding Status</h3>
           <div className="status-badge">
@@ -149,7 +136,6 @@ function App() {
           </ul>
         </div>
 
-        {/* Transaction Ledger Panel */}
         <div className="panel ks1-panel">
           <h3>Transaction Ledger</h3>
           <div className="table-wrap">

@@ -3,13 +3,13 @@ import axios from 'axios';
 import './App.css';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
-const ADMIN_SECRET = 'admin123'; // 🔐 Secret Password for Admin Access
+const ADMIN_SECRET = 'admin123';
 
 function App() {
-  const [view, setView] = useState('login'); // 'login', 'dashboard', 'admin'
+  const [view, setView] = useState('login'); 
   const [wallet, setWallet] = useState('');
   const [userData, setUserData] = useState(null);
-  const [allUsers, setAllUsers] = useState([]); // For Admin View
+  const [allUsers, setAllUsers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -19,14 +19,11 @@ function App() {
     businessType: 'SME'
   });
 
-  // --- Handlers ---
-
   const handleLogin = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError('');
 
-    // 🔐 ADMIN CHECK
     if (wallet === ADMIN_SECRET) {
       fetchAllUsers();
       setView('admin');
@@ -34,7 +31,6 @@ function App() {
       return;
     }
 
-    // Normal User Login
     try {
       const res = await axios.get(`${API_URL}/user/${wallet}`);
       setUserData(res.data);
@@ -79,8 +75,6 @@ function App() {
     }
   };
 
-  // --- Admin Functions ---
-
   const fetchAllUsers = async () => {
     setLoading(true);
     try {
@@ -94,111 +88,92 @@ function App() {
   };
 
   const handleDeleteUser = async (userId) => {
-    if (!window.confirm('Are you sure you want to delete this user? This cannot be undone.')) return;
-    
+    if (!window.confirm('Are you sure you want to delete this user permanently?')) return;
     try {
       await axios.delete(`${API_URL}/admin/delete-user/${userId}`);
-      // Refresh list
       fetchAllUsers();
-      alert('User deleted successfully.');
     } catch (err) {
       alert('Failed to delete user.');
     }
   };
 
-  // --- Views ---
-
-  // 1. Login / Register View
+  // --- VIEW: LOGIN / REGISTER ---
   if (view === 'login') {
     return (
-      <div className="container" style={{ maxWidth: '500px', marginTop: '50px' }}>
+      <div className="container" style={{ maxWidth: '500px', marginTop: '60px' }}>
         <div className="card">
-          <h2 style={{ color: 'var(--gold-primary)', textAlign: 'center' }}>KS1 Trade ID</h2>
-          <p style={{ textAlign: 'center', color: 'var(--text-muted)' }}>Identity & Reputation Backbone</p>
-          
-          <div style={{ marginTop: '20px' }}>
-            <label style={{color:'var(--gold-primary)', fontWeight:'bold'}}>Access Dashboard</label>
-            <form onSubmit={handleLogin}>
-              <input 
-                type="text" 
-                placeholder="Enter Wallet Address (or 'admin123')" 
-                value={wallet}
-                onChange={(e) => setWallet(e.target.value)}
-                required
-              />
-              <button type="submit" className="btn-gold" style={{ width: '100%' }} disabled={loading}>
-                {loading ? 'Loading...' : 'Access'}
-              </button>
-            </form>
-            
-            <hr style={{ borderColor: 'rgba(255,255,255,0.1)', margin: '20px 0' }} />
-            
-            <h3 style={{color:'var(--gold-primary)'}}>New Registration</h3>
-            <form onSubmit={handleRegister}>
-              <input 
-                type="text" 
-                placeholder="Wallet Address" 
-                value={wallet}
-                onChange={(e) => setWallet(e.target.value)}
-                required
-              />
-              <input 
-                type="text" 
-                placeholder="Business Name" 
-                onChange={(e) => setFormData({...formData, businessName: e.target.value})}
-                required
-              />
-              <input 
-                type="text" 
-                placeholder="Country" 
-                onChange={(e) => setFormData({...formData, country: e.target.value})}
-                required
-              />
-              <select onChange={(e) => setFormData({...formData, businessType: e.target.value})}>
-                <option value="SME">SME</option>
-                <option value="Enterprise">Enterprise</option>
-                <option value="Individual">Individual</option>
-              </select>
-              
-              {error && <div className="error-msg">{error}</div>}
-              
-              <button type="submit" className="btn-gold" style={{ width: '100%' }} disabled={loading}>
-                {loading ? 'Generating ID...' : 'Register & Get KS1 ID'}
-              </button>
-            </form>
+          <div style={{textAlign:'center', marginBottom:'2rem'}}>
+            <h1>KS1 Trade ID</h1>
+            <p style={{ color: 'var(--text-muted)', fontSize:'1.1rem' }}>Alkebulan Pay Ecosystem</p>
           </div>
+          
+          <form onSubmit={handleLogin}>
+            <label style={{color:'var(--gold-primary)', fontWeight:'800', fontSize:'0.9rem', textTransform:'uppercase'}}>Access Dashboard</label>
+            <input 
+              type="text" 
+              placeholder="Enter Wallet or 'admin123'" 
+              value={wallet}
+              onChange={(e) => setWallet(e.target.value)}
+              required
+            />
+            <button type="submit" className="btn-gold" style={{ width: '100%' }} disabled={loading}>
+              {loading ? 'Processing...' : 'Enter System'}
+            </button>
+          </form>
+          
+          <hr />
+          
+          <h3 style={{color:'var(--gold-primary)', fontSize:'1.2rem'}}>New Registration</h3>
+          <form onSubmit={handleRegister}>
+            <input type="text" placeholder="Wallet Address" value={wallet} onChange={(e) => setWallet(e.target.value)} required />
+            <input type="text" placeholder="Business Name" onChange={(e) => setFormData({...formData, businessName: e.target.value})} required />
+            <input type="text" placeholder="Country" onChange={(e) => setFormData({...formData, country: e.target.value})} required />
+            <select onChange={(e) => setFormData({...formData, businessType: e.target.value})}>
+              <option value="SME">SME</option>
+              <option value="Enterprise">Enterprise</option>
+              <option value="Individual">Individual</option>
+            </select>
+            
+            {error && <div className="error-msg">{error}</div>}
+            
+            <button type="submit" className="btn-gold" style={{ width: '100%' }} disabled={loading}>
+              {loading ? 'Generating ID...' : 'Register Business'}
+            </button>
+          </form>
         </div>
       </div>
     );
   }
 
-  // 2. Admin Dashboard View
+  // --- VIEW: ADMIN DASHBOARD (REDESIGNED) ---
   if (view === 'admin') {
     return (
       <div className="container">
-        <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+        <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', flexWrap:'wrap', gap:'1rem' }}>
           <div>
-            <h1 style={{ color: 'var(--gold-primary)' }}>KS1 Admin Dashboard</h1>
-            <p style={{ color: 'var(--text-muted)' }}>Global Ecosystem Overview</p>
+            <h1>KS1 Admin Command</h1>
+            <p style={{ color: 'var(--text-muted)', fontSize:'1.1rem' }}>Global Ecosystem Overview</p>
           </div>
           <button onClick={() => { setView('login'); setWallet(''); }} className="btn-gold">Logout</button>
         </header>
 
         <div className="card">
-          <h3 style={{color:'var(--gold-primary)', borderBottom:'1px solid rgba(255,255,255,0.1)', paddingBottom:'10px'}}>
-            Registered Businesses ({allUsers.length})
-          </h3>
-          {loading ? <p>Loading data...</p> : (
-            <div style={{overflowX:'auto'}}>
-              <table style={{ width: '100%', textAlign: 'left', borderCollapse: 'collapse', color: '#fff', marginTop:'10px' }}>
+          <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'1.5rem'}}>
+            <h3 style={{color:'#fff', fontSize:'1.4rem', margin:0}}>Registered Businesses</h3>
+            <span className="badge" style={{background:'var(--gold-primary)', color:'#000'}}>{allUsers.length} Total</span>
+          </div>
+          
+          {loading ? <p style={{textAlign:'center', padding:'2rem'}}>Loading Data...</p> : (
+            <div className="table-container">
+              <table>
                 <thead>
-                  <tr style={{ borderBottom: '2px solid var(--gold-primary)' }}>
-                    <th style={{padding:'12px'}}>Trade ID</th>
-                    <th>Business</th>
+                  <tr>
+                    <th>Trade ID</th>
+                    <th>Business Details</th>
                     <th>Wallet</th>
                     <th>Score</th>
                     <th>Volume</th>
-                    <th>Eligible</th>
+                    <th>Status</th>
                     <th>Action</th>
                   </tr>
                 </thead>
@@ -206,23 +181,39 @@ function App() {
                   {allUsers.map(user => {
                     const isEligible = user.reputationScore >= 70 && user.totalTradeVolume >= 1000 && user.disputeCount < 5;
                     return (
-                      <tr key={user._id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                        <td style={{padding:'12px', color:'var(--gold-primary)', fontWeight:'bold'}}>{user.tradeId}</td>
-                        <td>{user.businessName}<br/><span style={{fontSize:'0.8em', color:'var(--text-muted)'}}>{user.country}</span></td>
-                        <td style={{fontFamily:'monospace', fontSize:'0.9em'}}>{user.walletAddress.substring(0,6)}...{user.walletAddress.substring(38)}</td>
-                        <td style={{color: user.reputationScore >= 70 ? 'var(--success)' : 'var(--danger)'}}>{user.reputationScore}</td>
-                        <td>${user.totalTradeVolume.toLocaleString()}</td>
+                      <tr key={user._id}>
                         <td>
-                          <span className={`badge ${isEligible ? 'badge-eligible' : 'badge-not-eligible'}`} style={{fontSize:'0.8em'}}>
-                            {isEligible ? 'YES' : 'NO'}
+                          <span className="trade-id-cell" style={{color:'var(--gold-primary)'}}>{user.tradeId}</span>
+                        </td>
+                        <td>
+                          <div style={{fontWeight:'800', fontSize:'1.1rem'}}>{user.businessName}</div>
+                          <div style={{color:'var(--text-muted)', fontSize:'0.9rem'}}>{user.country} • {user.businessType}</div>
+                        </td>
+                        <td style={{fontFamily:'monospace', color:'var(--text-muted)'}}>
+                          {user.walletAddress.substring(0,6)}...{user.walletAddress.substring(38)}
+                        </td>
+                        <td>
+                          <span style={{
+                            fontWeight:'800', 
+                            fontSize:'1.2rem',
+                            color: user.reputationScore >= 70 ? 'var(--success)' : 'var(--danger)'
+                          }}>
+                            {user.reputationScore}
+                          </span>
+                        </td>
+                        <td style={{fontWeight:'700'}}>${user.totalTradeVolume.toLocaleString()}</td>
+                        <td>
+                          <span className={`badge ${isEligible ? 'badge-eligible' : 'badge-not-eligible'}`}>
+                            {isEligible ? 'ELIGIBLE' : 'PENDING'}
                           </span>
                         </td>
                         <td>
                           <button 
                             onClick={() => handleDeleteUser(user._id)} 
-                            style={{background:'rgba(255,95,95,0.2)', color:'var(--danger)', border:'1px solid var(--danger)', padding:'6px 12px', cursor:'pointer', borderRadius:'4px', fontWeight:'bold'}}
+                            className="btn-gold btn-danger"
+                            style={{padding:'8px 16px', fontSize:'0.8rem'}}
                           >
-                            Delete
+                            DELETE
                           </button>
                         </td>
                       </tr>
@@ -230,7 +221,7 @@ function App() {
                   })}
                 </tbody>
               </table>
-              {allUsers.length === 0 && <p style={{textAlign:'center', padding:'20px', color:'var(--text-muted)'}}>No users registered yet.</p>}
+              {allUsers.length === 0 && <p style={{textAlign:'center', padding:'3rem', color:'var(--text-muted)'}}>No businesses registered yet.</p>}
             </div>
           )}
         </div>
@@ -238,15 +229,15 @@ function App() {
     );
   }
 
-  // 3. User Dashboard View (Existing Code)
+  // --- VIEW: USER DASHBOARD (REDESIGNED) ---
   return (
     <div className="container">
       <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', flexWrap:'wrap', gap:'1rem' }}>
         <div>
-          <h1 style={{ color: 'var(--gold-primary)', textShadow: '2px 2px 4px rgba(0,0,0,0.5)' }}>KS1 Trade ID</h1>
+          <h1>My Dashboard</h1>
           <p style={{ color: 'var(--text-muted)', margin:0 }}>Powered by KS1 P2P Gateway</p>
         </div>
-        <button onClick={() => { setUserData(null); setView('login'); setWallet(''); }} className="btn-gold" style={{ padding: '8px 16px', fontSize: '0.8rem' }}>
+        <button onClick={() => { setUserData(null); setView('login'); setWallet(''); }} className="btn-gold">
           Logout
         </button>
       </header>
@@ -254,41 +245,82 @@ function App() {
       <div className="card">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap:'20px' }}>
           <div style={{flex:1, minWidth:'250px'}}>
-            <p style={{ color: 'var(--text-muted)', margin: 0, fontSize:'0.9rem' }}>Your Unique Trade ID</p>
-            <div className="trade-id-display">{userData?.tradeId}</div>
-            <p><strong>Wallet:</strong> <span style={{ fontFamily: 'monospace', color: 'var(--gold-primary)' }}>{userData?.walletAddress}</span></p>
-            <p><strong>Business:</strong> {userData?.businessName} ({userData?.country})</p>
+            <p style={{ color: 'var(--text-muted)', margin: 0, fontSize:'0.9rem', textTransform:'uppercase', letterSpacing:'1px' }}>Your Unique Trade ID</p>
+            <div className="trade-id-display" style={{fontSize:'2.5rem', color:'#fff', fontWeight:'800', margin:'10px 0', fontFamily:'monospace'}}>
+              {userData?.tradeId}
+            </div>
+            <div style={{marginTop:'15px'}}>
+              <p style={{margin:'5px 0', fontSize:'1.1rem'}}><strong style={{color:'var(--gold-primary)'}}>Wallet:</strong> <span style={{fontFamily:'monospace'}}>{userData?.walletAddress}</span></p>
+              <p style={{margin:'5px 0', fontSize:'1.1rem'}}><strong style={{color:'var(--gold-primary)'}}>Business:</strong> {userData?.businessName} ({userData?.country})</p>
+            </div>
           </div>
-          <div style={{ textAlign: 'right', minWidth:'200px' }}>
-            <p style={{ color: 'var(--text-muted)', margin: 0, fontSize:'0.9rem' }}>Funding Eligibility</p>
-            <span className={`badge ${userData?.isEligible ? 'badge-eligible' : 'badge-not-eligible'}`} style={{fontSize:'1.1rem', padding:'8px 16px'}}>
-              {userData?.isEligible ? 'ELIGIBLE' : 'NOT ELIGIBLE'}
-            </span>
-            <div style={{ marginTop: '10px', fontSize: '0.8rem', color: 'var(--text-muted)', lineHeight:'1.4' }}>
-              Requirements:<br/>• Score ≥ 70<br/>• Vol ≥ $1,000<br/>• Disputes &lt; 5
+          <div style={{ textAlign: 'right', minWidth:'200px', background:'rgba(0,0,0,0.2)', padding:'20px', borderRadius:'12px' }}>
+            <p style={{ color: 'var(--text-muted)', margin: 0, fontSize:'0.8rem', textTransform:'uppercase' }}>Funding Status</p>
+            <div style={{margin:'10px 0'}}>
+              <span className={`badge ${userData?.isEligible ? 'badge-eligible' : 'badge-not-eligible'}`} style={{fontSize:'1.2rem', padding:'10px 20px'}}>
+                {userData?.isEligible ? 'ELIGIBLE FOR FUNDING' : 'NOT ELIGIBLE'}
+              </span>
+            </div>
+            <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', lineHeight:'1.6', textAlign:'left' }}>
+              <div>• Score ≥ 70</div>
+              <div>• Vol ≥ $1,000</div>
+              <div>• Disputes &lt; 5</div>
             </div>
           </div>
         </div>
       </div>
 
       <div className="metrics-grid">
-        <div className="metric-box"><span className="metric-value">{userData?.reputationScore}</span><span className="metric-label">Reputation Score</span></div>
-        <div className="metric-box"><span className="metric-value">${userData?.totalTradeVolume.toLocaleString()}</span><span className="metric-label">Trade Volume</span></div>
-        <div className="metric-box"><span className="metric-value">{userData?.totalTransactions}</span><span className="metric-label">Transactions</span></div>
-        <div className="metric-box"><span className="metric-value" style={{ color: userData?.disputeCount > 0 ? 'var(--danger)' : 'var(--success)' }}>{userData?.disputeCount}</span><span className="metric-label">Disputes</span></div>
-        <div className="metric-box"><span className="metric-value">${userData?.fundingReceived.toLocaleString()}</span><span className="metric-label">Funding Received</span></div>
-        <div className="metric-box"><span className="metric-value">{userData?.repaymentScore}%</span><span className="metric-label">Repayment Score</span></div>
+        <div className="metric-box">
+          <span className="metric-value">{userData?.reputationScore}</span>
+          <span className="metric-label">Reputation Score</span>
+        </div>
+        <div className="metric-box">
+          <span className="metric-value">${userData?.totalTradeVolume.toLocaleString()}</span>
+          <span className="metric-label">Trade Volume</span>
+        </div>
+        <div className="metric-box">
+          <span className="metric-value">{userData?.totalTransactions}</span>
+          <span className="metric-label">Transactions</span>
+        </div>
+        <div className="metric-box">
+          <span className="metric-value" style={{ color: userData?.disputeCount > 0 ? 'var(--danger)' : 'var(--success)' }}>
+            {userData?.disputeCount}
+          </span>
+          <span className="metric-label">Disputes</span>
+        </div>
+        <div className="metric-box">
+          <span className="metric-value">${userData?.fundingReceived.toLocaleString()}</span>
+          <span className="metric-label">Funding Received</span>
+        </div>
+        <div className="metric-box">
+          <span className="metric-value">{userData?.repaymentScore}%</span>
+          <span className="metric-label">Repayment Score</span>
+        </div>
       </div>
 
       <div className="card" style={{ marginTop: '2rem' }}>
-        <h3 style={{ color: 'var(--gold-primary)', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '10px' }}>Simulate Activity</h3>
-        <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Test the reputation engine and eligibility logic.</p>
+        <h3 style={{ color: '#fff', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '15px', marginBottom:'20px' }}>
+          Simulate Activity
+        </h3>
+        <p style={{ color: 'var(--text-muted)', fontSize: '1rem', marginBottom:'20px' }}>Test the reputation engine and eligibility logic.</p>
+        
         <div className="btn-group">
-          <button onClick={() => simulateAction('simulate-transaction', { amount: 150 })} className="btn-gold" disabled={loading}>+ Transaction ($150)</button>
-          <button onClick={() => simulateAction('simulate-dispute', {})} className="btn-gold" disabled={loading} style={{ background: 'linear-gradient(145deg, #ff5f5f, #cc0000)', color: 'white', boxShadow: '0 4px 0 #990000' }}>+ Add Dispute</button>
-          <button onClick={() => simulateAction('simulate-funding', { amount: 500 })} className="btn-gold" disabled={loading}>+ Receive Funding ($500)</button>
-          <button onClick={() => simulateAction('simulate-repayment', { scoreImpact: 5 })} className="btn-gold" disabled={loading}>+ Repay (+5 Score)</button>
-          <button onClick={() => simulateAction('simulate-repayment', { scoreImpact: -10 })} className="btn-gold" disabled={loading} style={{ background: 'linear-gradient(145deg, #8892b0, #5c6b7f)', color: 'white', boxShadow: '0 4px 0 #3e4a59' }}>- Miss Payment (-10)</button>
+          <button onClick={() => simulateAction('simulate-transaction', { amount: 150 })} className="btn-gold" disabled={loading}>
+            + Transaction ($150)
+          </button>
+          <button onClick={() => simulateAction('simulate-dispute', {})} className="btn-gold btn-danger" disabled={loading}>
+            + Add Dispute
+          </button>
+          <button onClick={() => simulateAction('simulate-funding', { amount: 500 })} className="btn-gold" disabled={loading}>
+            + Receive Funding
+          </button>
+          <button onClick={() => simulateAction('simulate-repayment', { scoreImpact: 5 })} className="btn-gold" disabled={loading}>
+            + Repay (+5)
+          </button>
+          <button onClick={() => simulateAction('simulate-repayment', { scoreImpact: -10 })} className="btn-gold" style={{background:'#fff', color:'#64748b'}} disabled={loading}>
+            - Miss Payment
+          </button>
         </div>
       </div>
     </div>

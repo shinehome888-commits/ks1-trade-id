@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const User = require('../models/User');
 const generateTradeID = require('../utils/idGenerator');
-const crypto = require('crypto'); // For generating reset codes
+const crypto = require('crypto'); // CRITICAL: Required for password reset codes
 
 // Helper: Recalculate Reputation
 const calculateReputation = (user) => {
@@ -34,10 +34,12 @@ router.post('/register', async (req, res) => {
   try {
     const { walletAddress, phoneNumber, ownerName, ownerBirthday, whatsappNumber, password, businessName, businessType, country, region, city, town } = req.body;
 
+    // Validation
     if ((!walletAddress && !phoneNumber) || !ownerName || !ownerBirthday || !whatsappNumber || !password || !businessName || !country || !region || !city || !town) {
-      return res.status(400).json({ message: 'Missing required fields. All fields including Owner Details and Password are mandatory.' });
+      return res.status(400).json({ message: 'All fields are required including Owner Details and Password.' });
     }
 
+    // Check duplicates
     let query = {};
     if (walletAddress) query.walletAddress = walletAddress;
     if (phoneNumber) query.phoneNumber = phoneNumber;
@@ -47,6 +49,7 @@ router.post('/register', async (req, res) => {
       return res.status(400).json({ message: 'This Wallet or Phone Number is already registered' });
     }
 
+    // Generate Unique Trade ID
     let newId = generateTradeID();
     let isUnique = false;
     while (!isUnique) {
@@ -61,7 +64,7 @@ router.post('/register', async (req, res) => {
       ownerName,
       ownerBirthday: new Date(ownerBirthday),
       whatsappNumber,
-      password, // In production, use bcrypt.hash(password, 10)
+      password, // Stored as plain text for MVP (Hash in production)
       businessName,
       businessType: businessType || 'SME',
       country,
@@ -72,17 +75,21 @@ router.post('/register', async (req, res) => {
     });
 
     await newUser.save();
-    res.status(201).json({ success: true, user: newUser });
+    
+    // Check birthday immediately
+    const isBirthday = isTodayBirthday(newUser.ownerBirthday);
+
+    res.status(201).json({ success: true, user: { ...newUser.toObject(), isBirthday } });
   } catch (error) {
     console.error('Registration Error:', error);
     res.status(500).json({ message: 'Server error during registration', error: error.message });
   }
 });
 
-// POST /login (New Route for Password Auth)
+// POST /login
 router.post('/login', async (req, res) => {
   try {
-    const { identifier, password } = req.body; // identifier can be wallet, phone, or tradeID
+    const { identifier, password } = req.body;
     
     let user = await User.findOne({ walletAddress: identifier });
     if (!user) user = await User.findOne({ phoneNumber: identifier });
@@ -90,7 +97,6 @@ router.post('/login', async (req, res) => {
 
     if (!user) return res.status(404).json({ message: 'User not found' });
 
-    // Simple password check (In prod, use bcrypt.compare)
     if (user.password !== password) {
       return res.status(401).json({ message: 'Incorrect password' });
     }
@@ -100,11 +106,11 @@ router.post('/login', async (req, res) => {
     
     res.json({ ...user.toObject(), isEligible, isBirthday });
   } catch (error) {
-    res.status(500).json({ message: 'Server error logging in' });
+    res.status(500).json({ message: 'Server error logging in', error: error.message });
   }
 });
 
-// GET /user/:identifier (Keep for compatibility, but adds birthday check)
+// GET /user/:identifier
 router.get('/user/:identifier', async (req, res) => {
   try {
     const { identifier } = req.params;
@@ -118,7 +124,7 @@ router.get('/user/:identifier', async (req, res) => {
     const isBirthday = isTodayBirthday(user.ownerBirthday);
     res.json({ ...user.toObject(), isEligible, isBirthday });
   } catch (error) {
-    res.status(500).json({ message: 'Server error fetching user' });
+    res.status(500).json({ message: 'Server error fetching user', error: error.message });
   }
 });
 
@@ -130,22 +136,20 @@ router.post('/forgot-password', async (req, res) => {
     
     if (!user) return res.status(404).json({ message: 'User not found' });
 
-    // Generate 6-digit code
     const code = Math.floor(100000 + Math.random() * 900000).toString();
     user.resetCode = code;
     user.resetCodeExpires = Date.now() + 3600000; // 1 hour
     await user.save();
 
-    // In real app, send SMS/Email here. For MVP, return code in response (or log it)
     console.log(`PASSWORD RESET CODE for ${user.ownerName}: ${code}`);
     
     res.json({ 
       success: true, 
       message: 'Reset code generated. Check console/logs for MVP code.', 
-      debugCode: code // Remove in production!
+      debugCode: code 
     });
   } catch (error) {
-    res.status(500).json({ message: 'Error generating reset code' });
+    res.status(500).json({ message: 'Error generating reset code', error: error.message });
   }
 });
 
@@ -166,7 +170,7 @@ router.post('/reset-password', async (req, res) => {
 
     res.json({ success: true, message: 'Password reset successfully' });
   } catch (error) {
-    res.status(500).json({ message: 'Error resetting password' });
+    res.status(500).json({ message: 'Error resetting password', error: error.message });
   }
 });
 
@@ -178,19 +182,17 @@ const findUserByIdentifier = async (identifier) => {
   return user;
 };
 
-// ... (Simulation routes remain same, just ensure they use findUserByIdentifier) ...
 router.post('/simulate-transaction', async (req, res) => {
   try {
     const { walletAddress, phoneNumber, tradeId, amount } = req.body;
-    const identifier = walletAddress || phoneNumber || tradeId;
-    const user = await findUserByIdentifier(identifier);
+    const user = await findUserByIdentifier(walletAddress || phoneNumber || tradeId);
     if (!user) return res.status(404).json({ message: 'User not found' });
     user.totalTransactions += 1;
     user.totalTradeVolume += (amount || 100);
     user.reputationScore = calculateReputation(user);
     await user.save();
     res.json({ success: true, user });
-  } catch (error) { res.status(500).json({ message: 'Error updating transaction' }); }
+  } catch (error) { res.status(500).json({ message: 'Error updating transaction', error: error.message }); }
 });
 
 router.post('/simulate-dispute', async (req, res) => {
@@ -202,7 +204,7 @@ router.post('/simulate-dispute', async (req, res) => {
     user.reputationScore = calculateReputation(user);
     await user.save();
     res.json({ success: true, user });
-  } catch (error) { res.status(500).json({ message: 'Error adding dispute' }); }
+  } catch (error) { res.status(500).json({ message: 'Error adding dispute', error: error.message }); }
 });
 
 router.post('/simulate-funding', async (req, res) => {
@@ -213,7 +215,7 @@ router.post('/simulate-funding', async (req, res) => {
     user.fundingReceived += (amount || 500);
     await user.save();
     res.json({ success: true, user });
-  } catch (error) { res.status(500).json({ message: 'Error updating funding' }); }
+  } catch (error) { res.status(500).json({ message: 'Error updating funding', error: error.message }); }
 });
 
 router.post('/simulate-repayment', async (req, res) => {
@@ -226,14 +228,13 @@ router.post('/simulate-repayment', async (req, res) => {
     user.reputationScore = calculateReputation(user);
     await user.save();
     res.json({ success: true, user });
-  } catch (error) { res.status(500).json({ message: 'Error updating repayment' }); }
+  } catch (error) { res.status(500).json({ message: 'Error updating repayment', error: error.message }); }
 });
 
 // Admin Routes
 router.get('/admin/all-users', async (req, res) => {
   try {
     const users = await User.find().sort({ createdAt: -1 });
-    // Add birthday flag to each user
     const usersWithBirthday = users.map(u => ({
       ...u.toObject(),
       isBirthday: isTodayBirthday(u.ownerBirthday)
@@ -241,7 +242,7 @@ router.get('/admin/all-users', async (req, res) => {
     res.json(usersWithBirthday);
   } catch (error) {
     console.error('Admin fetch error:', error);
-    res.status(500).json({ message: 'Failed to fetch users' });
+    res.status(500).json({ message: 'Failed to fetch users', error: error.message });
   }
 });
 
@@ -251,7 +252,7 @@ router.delete('/admin/delete-user/:id', async (req, res) => {
     res.json({ success: true, message: 'User deleted successfully' });
   } catch (error) {
     console.error('Admin delete error:', error);
-    res.status(500).json({ message: 'Failed to delete user' });
+    res.status(500).json({ message: 'Failed to delete user', error: error.message });
   }
 });
 

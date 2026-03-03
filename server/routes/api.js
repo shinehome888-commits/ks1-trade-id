@@ -30,6 +30,10 @@ const checkEligibility = (user) => {
   );
 };
 
+// ==========================================
+// USER ROUTES
+// ==========================================
+
 // POST /register
 router.post('/register', async (req, res) => {
   try {
@@ -148,6 +152,33 @@ router.post('/simulate-repayment', async (req, res) => {
     res.json({ success: true, user });
   } catch (error) {
     res.status(500).json({ message: 'Error updating repayment' });
+  }
+});
+
+// ==========================================
+// NEW ADMIN ROUTES
+// ==========================================
+
+// GET /admin/all-users - Fetch all registered users
+router.get('/admin/all-users', async (req, res) => {
+  try {
+    // Sort by newest first
+    const users = await User.find().sort({ createdAt: -1 });
+    res.json(users);
+  } catch (error) {
+    console.error('Admin fetch error:', error);
+    res.status(500).json({ message: 'Failed to fetch users' });
+  }
+});
+
+// DELETE /admin/delete-user/:id - Delete a user by ID
+router.delete('/admin/delete-user/:id', async (req, res) => {
+  try {
+    await User.findByIdAndDelete(req.params.id);
+    res.json({ success: true, message: 'User deleted successfully' });
+  } catch (error) {
+    console.error('Admin delete error:', error);
+    res.status(500).json({ message: 'Failed to delete user' });
   }
 });
 

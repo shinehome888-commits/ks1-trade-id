@@ -1,16 +1,109 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>KS1 Trade ID | Alkebulan Pay</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    
+    <!-- Viewport for responsive design -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    
+    <!-- Page Title with Branding -->
+    <title>KS1 Trade ID – Nonprofit Project by KS1EGF</title>
+    
+    <!-- Meta Description with Universal Tagline -->
+    <meta name="description" content="KS1 Trade ID: Built for Alkebulan (Africa) SMEs, Businesses, Entrepreneurs, Enterprises And Traders. A nonprofit project by KS1 Empire Group & Foundation (KS1EGF). Secure • Non-custodial • Africa-first." />
+    
+    <!-- Keywords for SEO -->
+    <meta name="keywords" content="KS1 Trade ID, KS1EGF, Alkebulan, Africa, SME, Entrepreneur, Trader, Enterprise, nonprofit, P2P, funding, trade, Ghana, Africa business" />
+    
+    <!-- Author / Organization -->
+    <meta name="author" content="KS1 Empire Group & Foundation (KS1EGF)" />
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://ks1-trade-id-web.onrender.com/" />
+    <meta property="og:title" content="KS1 Trade ID – Nonprofit Project by KS1EGF" />
+    <meta property="og:description" content="Built for Alkebulan (Africa) SMEs, Businesses, Entrepreneurs, Enterprises And Traders." />
+    <meta property="og:image" content="/ks1-logo-gold.png" />
+    
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image" />
+    <meta property="twitter:url" content="https://ks1-trade-id-web.onrender.com/" />
+    <meta property="twitter:title" content="KS1 Trade ID – Nonprofit Project by KS1EGF" />
+    <meta property="twitter:description" content="Built for Alkebulan (Africa) SMEs, Businesses, Entrepreneurs, Enterprises And Traders." />
+    <meta property="twitter:image" content="/ks1-logo-gold.png" />
+    
+    <!-- Theme Color for browsers (Deep Blue) -->
+    <meta name="theme-color" content="#051024" />
+    
+    <!-- Favicon / App Icons (place these files in client/public/) -->
+    <link rel="icon" type="image/svg+xml" href="/ks1-favicon.svg" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/ks1-icon-32.png" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/ks1-icon-192.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/ks1-icon-180.png" />
+    
+    <!-- Preconnect to your backend for performance -->
+    <link rel="preconnect" href="https://ks1-trade-id-web.onrender.com" />
+    
+    <!-- Optional: Google Fonts for better typography -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Segoe+UI:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
+    
+    <!-- Optional: Manifest for PWA support -->
+    <!-- <link rel="manifest" href="/manifest.json" /> -->
   </head>
+  
   <body>
+    <!-- React Root Mount Point -->
     <div id="root"></div>
+    
+    <!-- Vite Entry Point -->
     <script type="module" src="/src/main.jsx"></script>
+    
+    <!-- Optional: Loading state before React hydrates -->
+    <script>
+      // Show subtle loading indicator while app initializes
+      document.addEventListener('DOMContentLoaded', () => {
+        const root = document.getElementById('root');
+        if (root.children.length === 0) {
+          root.innerHTML = `
+            <div style="
+              min-height: 100vh;
+              display: flex;
+              flex-direction: column;
+              justify-content: center;
+              align-items: center;
+              background: #051024;
+              color: #FFD700;
+              font-family: 'Segoe UI', sans-serif;
+              text-align: center;
+              padding: 20px;
+            ">
+              <h1 style="
+                font-size: 2rem;
+                font-weight: 900;
+                text-transform: uppercase;
+                text-shadow: 3px 3px 0 #000, 6px 6px 0 rgba(255,215,0,0.4);
+                margin-bottom: 20px;
+              ">KS1 Trade ID</h1>
+              <p style="color: #b0c4de; font-size: 1.1rem; margin-bottom: 30px;">
+                Loading secure dashboard...
+              </p>
+              <div style="
+                width: 50px;
+                height: 50px;
+                border: 4px solid rgba(255,215,0,0.3);
+                border-top: 4px solid #FFD700;
+                border-radius: 50%;
+                animation: spin 1s linear infinite;
+              "></div>
+              <style>
+                @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+              </style>
+            </div>
+          `;
+        }
+      });
+    </script>
   </body>
 </html>

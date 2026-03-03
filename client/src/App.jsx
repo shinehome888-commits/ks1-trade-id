@@ -58,7 +58,7 @@ function App() {
         const id = userData.walletAddress || userData.phoneNumber || userData.tradeId;
         const res = await axios.get(`${API_URL}/user/${id}`);
         setUserData(res.data);
-        if(res.data.isBirthday) alert(`🎉 Happy Birthday ${userData.ownerName}!`);
+        if(res.data.isBirthday) alert(`🎉 Happy Birthday ${userData.ownerName}!\n\nKS1 Trade ID is honored to have you in our ecosystem. May this year bring unprecedented success to your business! 🚀`);
         addLedger("Refresh", 0, "neutral");
       } catch(e) { handleLogout(); }
     }
@@ -77,7 +77,7 @@ function App() {
       const res = await axios.post(`${API_URL}/login`, { identifier: wallet || phone, password });
       setUserData(res.data); setView('dashboard');
       addLedger("Login", 0, "neutral");
-      if(res.data.isBirthday) alert(`🎉 Happy Birthday ${res.data.ownerName}!`);
+      if(res.data.isBirthday) alert(`🎉 Happy Birthday ${res.data.ownerName}!\n\nFrom all of us at KS1 Trade ID, we appreciate you being part of our journey. May your business flourish and your dreams soar higher! 🌟`);
     } catch(err) { setError(err.response?.data?.message || "Login failed"); }
     setLoading(false);
   };
@@ -96,7 +96,7 @@ function App() {
       const res = await axios.post(`${API_URL}/register`, payload);
       setUserData(res.data.user); setView('dashboard');
       addLedger("Registered", 0, "neutral");
-      if(res.data.user.isBirthday) alert(`🎉 Happy Birthday!`);
+      if(res.data.user.isBirthday) alert(`🎉 Happy Birthday ${res.data.user.ownerName}!\n\nKS1 Trade ID celebrates you today! Thank you for trusting us with your business identity. Wishing you continued success and growth! 🌍💛`);
     } catch(err) { setError(err.response?.data?.message || "Register failed"); }
     setLoading(false);
   };
@@ -213,33 +213,90 @@ function App() {
       <div className="container">
         <StarField />
         <div className="page-header"><h1>Admin Command</h1><p>Powered By KS1EGF</p></div>
-        <div style={{display:'flex', justifyContent:'flex-end', marginBottom:'1rem'}}><button onClick={handleRefresh} className="btn-gold" disabled={loading}>🔄 Refresh</button></div>
+        <div style={{display:'flex', justifyContent:'flex-end', marginBottom:'1.5rem'}}>
+          <button onClick={handleRefresh} className="btn-gold" disabled={loading}>
+            🔄 Refresh Data
+          </button>
+        </div>
         <div className="card">
-          <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'1.5rem'}}><h3 style={{color:'#fff', margin:0}}>Businesses</h3><span className="badge" style={{background:'var(--gold-primary)', color:'#000'}}>{allUsers.length}</span></div>
+          <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'1.5rem', flexWrap:'wrap', gap:'1rem'}}>
+            <h3 style={{color:'#fff', margin:0, fontSize:'1.8rem', fontWeight:'900'}}>Registered Businesses</h3>
+            <span className="badge" style={{background:'var(--gold-primary)', color:'#000', fontSize:'1.1rem', padding:'12px 24px', fontWeight:'900'}}>{allUsers.length} Total</span>
+          </div>
           <div className="table-container">
             <table>
-              <thead><tr><th>ID</th><th>Business</th><th>Location</th><th>Contact</th><th>Birthday</th><th>Stats</th><th>Action</th></tr></thead>
+              <thead>
+                <tr>
+                  <th>ID & Date</th>
+                  <th>Business Info</th>
+                  <th>Location Details</th>
+                  <th>Owner Name</th>
+                  <th>Phone Number</th>
+                  <th>WhatsApp</th>
+                  <th>Birthday</th>
+                  <th>Stats</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
               <tbody>
                 {allUsers.map(u => {
                   const elig = u.reputationScore>=70 && u.totalTradeVolume>=1000 && u.disputeCount<5;
+                  const contact = u.walletAddress || u.phoneNumber;
                   return (
                     <tr key={u._id}>
-                      <td><span style={{color:'var(--gold-primary)', fontWeight:'800'}}>{u.tradeId}</span><br/><small style={{color:'var(--text-muted)'}}>{new Date(u.createdAt).toLocaleDateString()}</small></td>
-                      <td><div style={{fontWeight:'800'}}>{u.businessName}</div><small>{u.businessType}</small></td>
-                      <td><div>{u.town}, {u.city}</div><small style={{color:'var(--text-muted)'}}>{u.region}, {u.country}</small></td>
-                      <td><div style={{fontWeight:'800', color:'#fff'}}>{u.ownerName}</div><small>{u.walletAddress||u.phoneNumber}</small><small>WA: {u.whatsappNumber}</small></td>
-                      <td><div>{new Date(u.ownerBirthday).toLocaleDateString()}</div>{u.isBirthday && <span className="badge badge-birthday">🎉 Today!</span>}</td>
-                      <td><div style={{color:u.reputationScore>=70?'var(--success)':'var(--danger)', fontWeight:'800'}}>{u.reputationScore}</div><small>Vol: ${u.totalTradeVolume.toLocaleString()}</small><br/><span className={`badge ${elig?'badge-eligible':'badge-not-eligible'}`} style={{fontSize:'0.7rem', marginTop:'5px'}}>{elig?'ELIGIBLE':'NO'}</span></td>
-                      <td><button onClick={async()=>{if(window.confirm('Delete?')){await axios.delete(`${API_URL}/admin/delete-user/${u._id}`); handleRefresh();}}} className="btn-gold btn-danger" style={{padding:'8px 16px', fontSize:'0.8rem'}}>DEL</button></td>
+                      <td>
+                        <div style={{fontWeight:'900', fontSize:'1.15rem', color:'var(--gold-primary)', marginBottom:'5px', fontFamily:'monospace'}}>{u.tradeId}</div>
+                        <div style={{fontSize:'0.85rem', color:'var(--text-muted)', fontWeight:'600'}}>Registered: {new Date(u.createdAt).toLocaleDateString()}</div>
+                      </td>
+                      <td>
+                        <div style={{fontWeight:'900', fontSize:'1.15rem', color:'#fff', marginBottom:'6px'}}>{u.businessName}</div>
+                        <div style={{fontSize:'0.95rem', color:'var(--text-muted)', fontWeight:'700', textTransform:'uppercase'}}>{u.businessType}</div>
+                      </td>
+                      <td>
+                        <div style={{fontWeight:'800', fontSize:'0.95rem', color:'#fff', marginBottom:'3px'}}>{u.town}, {u.city}</div>
+                        <div style={{fontSize:'0.85rem', color:'var(--text-muted)', fontWeight:'700'}}>{u.region}, {u.country}</div>
+                      </td>
+                      <td>
+                        <div style={{fontWeight:'900', fontSize:'1.1rem', color:'#fff', fontFamily:'monospace'}}>{u.ownerName}</div>
+                      </td>
+                      <td>
+                        <div style={{fontWeight:'800', fontSize:'0.95rem', color:'#fff', fontFamily:'monospace'}}>{contact}</div>
+                      </td>
+                      <td>
+                        <div style={{fontWeight:'800', fontSize:'0.95rem', color:'#fff', fontFamily:'monospace'}}>{u.whatsappNumber}</div>
+                      </td>
+                      <td>
+                        <div style={{fontWeight:'800', fontSize:'0.95rem', color:'#fff', marginBottom:'6px'}}>{new Date(u.ownerBirthday).toLocaleDateString()}</div>
+                        {u.isBirthday && <span className="badge badge-birthday" style={{marginTop:'5px', display:'block', fontSize:'0.85rem', fontWeight:'800'}}>🎉 Today!</span>}
+                      </td>
+                      <td>
+                        <div style={{fontWeight:'900', fontSize:'1.3rem', color:u.reputationScore>=70?'var(--success)':'var(--danger)', marginBottom:'8px'}}>{u.reputationScore}</div>
+                        <div style={{fontSize:'0.85rem', color:'var(--text-muted)', fontWeight:'700', marginBottom:'6px'}}>Vol: ${u.totalTradeVolume.toLocaleString()}</div>
+                        <span className={`badge ${elig?'badge-eligible':'badge-not-eligible'}`} style={{fontSize:'0.75rem', fontWeight:'900', marginTop:'8px', display:'inline-block', letterSpacing:'0.5px'}}>ELIGIBLE</span>
+                      </td>
+                      <td>
+                        <button 
+                          onClick={async()=>{if(window.confirm('Delete this user permanently? This action cannot be undone.')){await axios.delete(`${API_URL}/admin/delete-user/${u._id}`); handleRefresh();}}} 
+                          className="btn-gold btn-danger" 
+                          style={{padding:'12px 18px', fontSize:'0.85rem', fontWeight:'900', width:'100%', textTransform:'uppercase'}}
+                        >
+                          DELETE
+                        </button>
+                      </td>
                     </tr>
                   )
                 })}
               </tbody>
             </table>
-            {allUsers.length===0 && <p style={{textAlign:'center', padding:'3rem', color:'var(--text-muted)'}}>No users yet.</p>}
+            {allUsers.length===0 && <p style={{textAlign:'center', padding:'3rem', color:'var(--text-muted)', fontSize:'1.2rem', fontWeight:'700'}}>No businesses registered yet.</p>}
           </div>
         </div>
-        <footer className="global-footer"><div className="footer-content"><span className="footer-brand">© 2026 KS1 Trade ID</span><p className="footer-text">A nonprofit project by KS1 Empire Group & Foundation (KS1EGF)<br/>Built for Alkebulan (Africa) SMEs, Businesses, Entrepreneurs, Enterprises And Traders</p></div></footer>
+        <footer className="global-footer">
+          <div className="footer-content">
+            <span className="footer-brand">© 2026 KS1 Trade ID</span>
+            <p className="footer-text">A nonprofit project by KS1 Empire Group & Foundation (KS1EGF)<br/>Built for Alkebulan (Africa) SMEs, Businesses, Entrepreneurs, Enterprises And Traders</p>
+          </div>
+        </footer>
       </div>
     );
   }

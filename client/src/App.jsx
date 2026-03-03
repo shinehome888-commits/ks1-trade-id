@@ -1,214 +1,330 @@
-import { useState, useEffect } from 'react'
-import './App.css'
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
+import './App.css';
+
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const ADMIN_SECRET = 'admin123';
 
 function App() {
-  const [currentPage, setCurrentPage] = useState('landing')
-  const [user, setUser] = useState(null)
-  const [transactions, setTransactions] = useState([])
-  const [fundingStatus, setFundingStatus] = useState({ eligible: true, score: 85, volume: 2450, disputes: 2 })
+  const [view, setView] = useState('login'); 
+  const [wallet, setWallet] = useState('');
+  const [userData, setUserData] = useState(null);
+  const [allUsers, setAllUsers] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
-  // === REAL-TIME REFRESH FUNCTION ===
-  const handleRefresh = () => {
-    window.location.reload()
-  }
+  const [formData, setFormData] = useState({
+    businessName: '',
+    country: '',
+    businessType: 'SME'
+  });
 
-  // === LOAD TRANSACTIONS ===
-  useEffect(() => {
-    if (currentPage === 'user-dashboard' && user) {
-      setTransactions([
-        { id: 1, date: '2026-03-02', type: 'Credit', description: 'Trade Settlement #KS1-9921', amount: 3250.00 },
-        { id: 2, date: '2026-03-01', type: 'Debit', description: 'Platform Service Fee', amount: -95.00 },
-        { id: 3, date: '2026-02-28', type: 'Credit', description: 'Grant Disbursement', amount: 10000.00 },
-      ])
-    }
-  }, [currentPage, user])
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
 
-  // === UNIVERSAL FOOTER COMPONENT ===
-  const UniversalFooter = () => (
-    <footer className="universal-footer">
-      <div className="footer-trademark">
-        &copy; 2026 KS1 Trade ID – A nonprofit project by<br />
-        KS1 Empire Group & Foundation (KS1EGF)
-      </div>
-      <div className="footer-built-for">
-        Built for Alkebulan (Africa) SMEs, Businesses,<br />
-        Entrepreneurs, Enterprises And Traders
-      </div>
-      <div className="footer-powered">Powered By KS1EGF</div>
-    </footer>
-  )
-
-  // === LANDING PAGE ===
-  const LandingPage = () => (
-    <div className="page-container">
-      <div className="hero">
-        <h1 className="ks1-title-3d">KS1 Trade ID</h1>
-        <p className="hero-subtitle">Secure • Non-custodial • Alkebulan-first • Nonprofit-powered</p>
-        <div className="hero-buttons">
-          <button className="btn-primary" onClick={() => setCurrentPage('register')}>Get Started</button>
-          <button className="btn-secondary" onClick={() => { setCurrentPage('user-dashboard'); setUser({ name: 'Demo User' }); }}>Demo Dashboard</button>
-        </div>
-      </div>
-      <UniversalFooter />
-    </div>
-  )
-
-  // === REGISTRATION PAGE ===
-  const RegistrationPage = () => {
-    const [formData, setFormData] = useState({ fullname: '', email: '', phone: '', category: '', password: '' })
-    
-    const categories = [
-      'Individual', 'SME', 'Enterprise', 'Entrepreneur', 'Trader', 'Vendor', 'Freelancer',
-      'Cooperative', 'NGO', 'Artisan', 'AgriBusiness', 'TechStartup', 'Logistics',
-      'Hospitality', 'Education', 'Healthcare', 'Creative', 'Other'
-    ]
-
-    const handleSubmit = (e) => {
-      e.preventDefault()
-      alert('✓ Registration submitted! Welcome to KS1 Trade ID.')
-      setCurrentPage('user-dashboard')
-      setUser({ name: formData.fullname, category: formData.category })
+    if (wallet === ADMIN_SECRET) {
+      fetchAllUsers();
+      setView('admin');
+      setLoading(false);
+      return;
     }
 
+    try {
+      const res = await axios.get(`${API_URL}/user/${wallet}`);
+      setUserData(res.data);
+      setView('dashboard');
+    } catch (err) {
+      setError('Wallet not found. Please register first.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRegister = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+    try {
+      const res = await axios.post(`${API_URL}/register`, {
+        walletAddress: wallet,
+        ...formData
+      });
+      setUserData(res.data.user);
+      setView('dashboard');
+    } catch (err) {
+      setError(err.response?.data?.message || 'Registration failed.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const simulateAction = async (endpoint, payload) => {
+    setLoading(true);
+    try {
+      const res = await axios.post(`${API_URL}/${endpoint}`, {
+        walletAddress: wallet,
+        ...payload
+      });
+      setUserData(res.data.user);
+    } catch (err) {
+      alert('Simulation failed: ' + (err.response?.data?.message || 'Network error'));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchAllUsers = async () => {
+    setLoading(true);
+    try {
+      const res = await axios.get(`${API_URL}/admin/all-users`);
+      setAllUsers(res.data);
+    } catch (err) {
+      setError('Failed to load admin data.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeleteUser = async (userId) => {
+    if (!window.confirm('Are you sure you want to delete this user permanently?')) return;
+    try {
+      await axios.delete(`${API_URL}/admin/delete-user/${userId}`);
+      fetchAllUsers();
+    } catch (err) {
+      alert('Failed to delete user.');
+    }
+  };
+
+  // --- VIEW: LOGIN / REGISTER ---
+  if (view === 'login') {
     return (
-      <div className="page-container">
-        <div className="auth-card">
-          <h2 className="ks1-title-3d">Join KS1 Trade ID</h2>
-          <form onSubmit={handleSubmit} className="ks1-form">
-            <div className="form-group">
-              <label>Full Name / Business Name *</label>
-              <input type="text" required value={formData.fullname} onChange={e => setFormData({...formData, fullname: e.target.value})} placeholder="Enter name" />
-            </div>
-            <div className="form-group">
-              <label>Email Address *</label>
-              <input type="email" required value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} placeholder="Enter email" />
-            </div>
-            <div className="form-group">
-              <label>Phone Number *</label>
-              <input type="tel" required value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} placeholder="+233..." />
-            </div>
-            <div className="form-group">
-              <label>Business Category *</label>
-              <select required value={formData.category} onChange={e => setFormData({...formData, category: e.target.value})}>
-                <option value="" disabled>— Select Category —</option>
-                {categories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
-              </select>
-            </div>
-            <div className="form-group">
-              <label>Password *</label>
-              <input type="password" required value={formData.password} onChange={e => setFormData({...formData, password: e.target.value})} placeholder="Create secure password" />
-            </div>
-            <button type="submit" className="btn-primary btn-3d">Register Now</button>
+      <div className="container" style={{ maxWidth: '500px', marginTop: '60px' }}>
+        <div className="card">
+          <div style={{textAlign:'center', marginBottom:'2rem'}}>
+            <h1>KS1 Trade ID</h1>
+            <p style={{ color: 'var(--text-muted)', fontSize:'1.1rem' }}>Alkebulan Pay Ecosystem</p>
+          </div>
+          
+          <form onSubmit={handleLogin}>
+            <label style={{color:'var(--gold-primary)', fontWeight:'800', fontSize:'0.9rem', textTransform:'uppercase'}}>Access Dashboard</label>
+            <input 
+              type="text" 
+              placeholder="Enter Wallet or 'admin123'" 
+              value={wallet}
+              onChange={(e) => setWallet(e.target.value)}
+              required
+            />
+            <button type="submit" className="btn-gold" style={{ width: '100%' }} disabled={loading}>
+              {loading ? 'Processing...' : 'Enter System'}
+            </button>
           </form>
-          <p className="form-footer">Already have an account? <button className="link-btn" onClick={() => setCurrentPage('user-dashboard')}>Sign In</button></p>
+          
+          <hr />
+          
+          <h3 style={{color:'var(--gold-primary)', fontSize:'1.2rem'}}>New Registration</h3>
+          <form onSubmit={handleRegister}>
+            <input type="text" placeholder="Wallet Address" value={wallet} onChange={(e) => setWallet(e.target.value)} required />
+            <input type="text" placeholder="Business Name" onChange={(e) => setFormData({...formData, businessName: e.target.value})} required />
+            <input type="text" placeholder="Country" onChange={(e) => setFormData({...formData, country: e.target.value})} required />
+            <select onChange={(e) => setFormData({...formData, businessType: e.target.value})}>
+              <option value="SME">SME</option>
+              <option value="Enterprise">Enterprise</option>
+              <option value="Individual">Individual</option>
+            </select>
+            
+            {error && <div className="error-msg">{error}</div>}
+            
+            <button type="submit" className="btn-gold" style={{ width: '100%' }} disabled={loading}>
+              {loading ? 'Generating ID...' : 'Register Business'}
+            </button>
+          </form>
         </div>
-        <UniversalFooter />
       </div>
-    )
+    );
   }
 
-  // === USER DASHBOARD ===
-  const UserDashboard = () => (
-    <div className="page-container">
-      <header className="dashboard-header">
-        <h2>KS1 Trade ID</h2>
-        <button className="btn-refresh btn-3d-white" onClick={handleRefresh} title="Refresh for real-time updates">
-          ↻ Refresh
+  // --- VIEW: ADMIN DASHBOARD (REDESIGNED) ---
+  if (view === 'admin') {
+    return (
+      <div className="container">
+        <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', flexWrap:'wrap', gap:'1rem' }}>
+          <div>
+            <h1>KS1 Admin Command</h1>
+            <p style={{ color: 'var(--text-muted)', fontSize:'1.1rem' }}>Global Ecosystem Overview</p>
+          </div>
+          <button onClick={() => { setView('login'); setWallet(''); }} className="btn-gold">Logout</button>
+        </header>
+
+        <div className="card">
+          <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'1.5rem'}}>
+            <h3 style={{color:'#fff', fontSize:'1.4rem', margin:0}}>Registered Businesses</h3>
+            <span className="badge" style={{background:'var(--gold-primary)', color:'#000'}}>{allUsers.length} Total</span>
+          </div>
+          
+          {loading ? <p style={{textAlign:'center', padding:'2rem'}}>Loading Data...</p> : (
+            <div className="table-container">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Trade ID</th>
+                    <th>Business Details</th>
+                    <th>Wallet</th>
+                    <th>Score</th>
+                    <th>Volume</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {allUsers.map(user => {
+                    const isEligible = user.reputationScore >= 70 && user.totalTradeVolume >= 1000 && user.disputeCount < 5;
+                    return (
+                      <tr key={user._id}>
+                        <td>
+                          <span className="trade-id-cell" style={{color:'var(--gold-primary)'}}>{user.tradeId}</span>
+                        </td>
+                        <td>
+                          <div style={{fontWeight:'800', fontSize:'1.1rem'}}>{user.businessName}</div>
+                          <div style={{color:'var(--text-muted)', fontSize:'0.9rem'}}>{user.country} • {user.businessType}</div>
+                        </td>
+                        <td style={{fontFamily:'monospace', color:'var(--text-muted)'}}>
+                          {user.walletAddress.substring(0,6)}...{user.walletAddress.substring(38)}
+                        </td>
+                        <td>
+                          <span style={{
+                            fontWeight:'800', 
+                            fontSize:'1.2rem',
+                            color: user.reputationScore >= 70 ? 'var(--success)' : 'var(--danger)'
+                          }}>
+                            {user.reputationScore}
+                          </span>
+                        </td>
+                        <td style={{fontWeight:'700'}}>${user.totalTradeVolume.toLocaleString()}</td>
+                        <td>
+                          <span className={`badge ${isEligible ? 'badge-eligible' : 'badge-not-eligible'}`}>
+                            {isEligible ? 'ELIGIBLE' : 'PENDING'}
+                          </span>
+                        </td>
+                        <td>
+                          <button 
+                            onClick={() => handleDeleteUser(user._id)} 
+                            className="btn-gold btn-danger"
+                            style={{padding:'8px 16px', fontSize:'0.8rem'}}
+                          >
+                            DELETE
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+              {allUsers.length === 0 && <p style={{textAlign:'center', padding:'3rem', color:'var(--text-muted)'}}>No businesses registered yet.</p>}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // --- VIEW: USER DASHBOARD (REDESIGNED) ---
+  return (
+    <div className="container">
+      <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', flexWrap:'wrap', gap:'1rem' }}>
+        <div>
+          <h1>My Dashboard</h1>
+          <p style={{ color: 'var(--text-muted)', margin:0 }}>Powered by KS1 P2P Gateway</p>
+        </div>
+        <button onClick={() => { setUserData(null); setView('login'); setWallet(''); }} className="btn-gold">
+          Logout
         </button>
       </header>
 
-      <div className="dashboard-title-wrap">
-        <h1 className="dashboard-title-3d">My Dashboard</h1>
+      <div className="card">
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap:'20px' }}>
+          <div style={{flex:1, minWidth:'250px'}}>
+            <p style={{ color: 'var(--text-muted)', margin: 0, fontSize:'0.9rem', textTransform:'uppercase', letterSpacing:'1px' }}>Your Unique Trade ID</p>
+            <div className="trade-id-display" style={{fontSize:'2.5rem', color:'#fff', fontWeight:'800', margin:'10px 0', fontFamily:'monospace'}}>
+              {userData?.tradeId}
+            </div>
+            <div style={{marginTop:'15px'}}>
+              <p style={{margin:'5px 0', fontSize:'1.1rem'}}><strong style={{color:'var(--gold-primary)'}}>Wallet:</strong> <span style={{fontFamily:'monospace'}}>{userData?.walletAddress}</span></p>
+              <p style={{margin:'5px 0', fontSize:'1.1rem'}}><strong style={{color:'var(--gold-primary)'}}>Business:</strong> {userData?.businessName} ({userData?.country})</p>
+            </div>
+          </div>
+          <div style={{ textAlign: 'right', minWidth:'200px', background:'rgba(0,0,0,0.2)', padding:'20px', borderRadius:'12px' }}>
+            <p style={{ color: 'var(--text-muted)', margin: 0, fontSize:'0.8rem', textTransform:'uppercase' }}>Funding Status</p>
+            <div style={{margin:'10px 0'}}>
+              <span className={`badge ${userData?.isEligible ? 'badge-eligible' : 'badge-not-eligible'}`} style={{fontSize:'1.2rem', padding:'10px 20px'}}>
+                {userData?.isEligible ? 'ELIGIBLE FOR FUNDING' : 'NOT ELIGIBLE'}
+              </span>
+            </div>
+            <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', lineHeight:'1.6', textAlign:'left' }}>
+              <div>• Score ≥ 70</div>
+              <div>• Vol ≥ $1,000</div>
+              <div>• Disputes &lt; 5</div>
+            </div>
+          </div>
+        </div>
       </div>
 
-      <div className="dashboard-grid">
+      <div className="metrics-grid">
+        <div className="metric-box">
+          <span className="metric-value">{userData?.reputationScore}</span>
+          <span className="metric-label">Reputation Score</span>
+        </div>
+        <div className="metric-box">
+          <span className="metric-value">${userData?.totalTradeVolume.toLocaleString()}</span>
+          <span className="metric-label">Trade Volume</span>
+        </div>
+        <div className="metric-box">
+          <span className="metric-value">{userData?.totalTransactions}</span>
+          <span className="metric-label">Transactions</span>
+        </div>
+        <div className="metric-box">
+          <span className="metric-value" style={{ color: userData?.disputeCount > 0 ? 'var(--danger)' : 'var(--success)' }}>
+            {userData?.disputeCount}
+          </span>
+          <span className="metric-label">Disputes</span>
+        </div>
+        <div className="metric-box">
+          <span className="metric-value">${userData?.fundingReceived.toLocaleString()}</span>
+          <span className="metric-label">Funding Received</span>
+        </div>
+        <div className="metric-box">
+          <span className="metric-value">{userData?.repaymentScore}%</span>
+          <span className="metric-label">Repayment Score</span>
+        </div>
+      </div>
+
+      <div className="card" style={{ marginTop: '2rem' }}>
+        <h3 style={{ color: '#fff', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '15px', marginBottom:'20px' }}>
+          Simulate Activity
+        </h3>
+        <p style={{ color: 'var(--text-muted)', fontSize: '1rem', marginBottom:'20px' }}>Test the reputation engine and eligibility logic.</p>
         
-        <div className="panel ks1-panel">
-          <h3>Funding Status</h3>
-          <div className="status-badge">
-            <strong>ELIGIBLE FOR FUNDING</strong>
-            <span>ID: KS1-{user?.name?.slice(0,3).toUpperCase() || 'USER'}-{Math.floor(Math.random()*9000)+1000}</span>
-          </div>
-          <ul className="criteria-list">
-            <li>✓ Score ≥ 70 <small>(Yours: {fundingStatus.score})</small></li>
-            <li>✓ Vol ≥ $1,000 <small>(Yours: ${fundingStatus.volume})</small></li>
-            <li>✓ Disputes &lt; 5 <small>(Yours: {fundingStatus.disputes})</small></li>
-          </ul>
-        </div>
-
-        <div className="panel ks1-panel">
-          <h3>Transaction Ledger</h3>
-          <div className="table-wrap">
-            <table className="ks1-table">
-              <thead>
-                <tr>
-                  <th>Date</th><th>Type</th><th>Description</th><th className="text-right">Amount (GHS)</th>
-                </tr>
-              </thead>
-              <tbody>
-                {transactions.map(tx => (
-                  <tr key={tx.id}>
-                    <td>{tx.date}</td>
-                    <td className={tx.amount > 0 ? 'text-success' : 'text-danger'}>{tx.type}</td>
-                    <td>{tx.description}</td>
-                    <td className={`text-right ${tx.amount > 0 ? 'text-success' : 'text-danger'} fw-bold`}>
-                      {tx.amount > 0 ? '+' : ''}{tx.amount.toLocaleString('en-GH', {minimumFractionDigits:2})}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-      </div>
-      <UniversalFooter />
-    </div>
-  )
-
-  // === ADMIN DASHBOARD ===
-  const AdminDashboard = () => (
-    <div className="page-container">
-      <header className="dashboard-header">
-        <h2>KS1 Trade ID Admin</h2>
-        <button className="btn-refresh btn-3d-white" onClick={handleRefresh}>↻ Refresh</button>
-      </header>
-      <div className="dashboard-title-wrap">
-        <h1 className="dashboard-title-3d">Admin Dashboard</h1>
-      </div>
-      <div className="dashboard-grid">
-        <div className="panel ks1-panel">
-          <h3>System Overview</h3>
-          <p className="admin-stats">
-            • Total Businesses: <strong>1,247</strong><br />
-            • Pending Verifications: <strong>34</strong><br />
-            • Active Funding Reviews: <strong className="text-success">12</strong><br />
-            • Open Support Tickets: <strong className="text-danger">5</strong>
-          </p>
-        </div>
-        <div className="panel ks1-panel">
-          <h3>Quick Actions</h3>
-          <div className="admin-actions">
-            <button className="btn-refresh btn-3d-white">Manage Users</button>
-            <button className="btn-refresh btn-3d-white">View Transactions</button>
-            <button className="btn-refresh btn-3d-white">Funding Approvals</button>
-            <button className="btn-refresh btn-3d-white">Support Tickets</button>
-          </div>
+        <div className="btn-group">
+          <button onClick={() => simulateAction('simulate-transaction', { amount: 150 })} className="btn-gold" disabled={loading}>
+            + Transaction ($150)
+          </button>
+          <button onClick={() => simulateAction('simulate-dispute', {})} className="btn-gold btn-danger" disabled={loading}>
+            + Add Dispute
+          </button>
+          <button onClick={() => simulateAction('simulate-funding', { amount: 500 })} className="btn-gold" disabled={loading}>
+            + Receive Funding
+          </button>
+          <button onClick={() => simulateAction('simulate-repayment', { scoreImpact: 5 })} className="btn-gold" disabled={loading}>
+            + Repay (+5)
+          </button>
+          <button onClick={() => simulateAction('simulate-repayment', { scoreImpact: -10 })} className="btn-gold" style={{background:'#fff', color:'#64748b'}} disabled={loading}>
+            - Miss Payment
+          </button>
         </div>
       </div>
-      <UniversalFooter />
     </div>
-  )
-
-  // === RENDER CURRENT PAGE ===
-  return (
-    <div className="app-wrapper">
-      {currentPage === 'landing' && <LandingPage />}
-      {currentPage === 'register' && <RegistrationPage />}
-      {currentPage === 'user-dashboard' && <UserDashboard />}
-      {currentPage === 'admin-dashboard' && <AdminDashboard />}
-    </div>
-  )
+  );
 }
 
-export default App
+export default App;

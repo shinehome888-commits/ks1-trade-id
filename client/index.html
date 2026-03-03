@@ -1,33 +1,16 @@
-services:
-  # 1. Backend API Service
-  - type: web
-    name: ks1-trade-id-api
-    env: node
-    region: oregon
-    plan: free
-    buildCommand: cd server && npm install
-    startCommand: cd server && node index.js
-    envVars:
-      - key: NODE_ENV
-        value: production
-      - key: PORT
-        value: 5000
-      - key: MONGO_URI
-        sync: false 
-
-  # 2. Frontend Static Site Service
-  - type: web
-    name: ks1-trade-id-web
-    env: static
-    buildCommand: cd client && npm install && npm run build
-    staticPublishPath: ./client/dist
-    headers:
-      - path: /*
-        name: X-Frame-Options
-        value: SAMEORIGIN
-    envVars:
-      - key: VITE_API_URL
-        fromService:
-          name: ks1-trade-id-api
-          type: web
-          envVarKey: RENDER_EXTERNAL_URL
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>KS1 Trade ID | KS1EGF</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&display=swap" rel="stylesheet">
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>

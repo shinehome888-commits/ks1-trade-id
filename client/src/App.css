@@ -151,7 +151,7 @@ body {
 .btn-3d-white:active { transform: translateY(5px); box-shadow: 0 1px 0 var(--btn-shadow-white); }
 .btn-3d-white:hover { filter: brightness(1.05); }
 
-.btn-refresh { /* alias for btn-3d-white */ }
+.btn-refresh { }
 
 .link-btn {
   background: none;

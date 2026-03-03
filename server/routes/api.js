@@ -3,25 +3,15 @@ const router = express.Router();
 const User = require('../models/User');
 const generateTradeID = require('../utils/idGenerator');
 
-// Helper: Recalculate Reputation
 const calculateReputation = (user) => {
   if (user.totalTransactions === 0) return 50;
-
   const completionRate = (user.totalTransactions - user.disputeCount) / user.totalTransactions;
-  
-  // Normalize Volume (Cap influence at $5000 for scaling)
   const volumeFactor = Math.min(user.totalTradeVolume / 5000, 1.0);
-  
-  // Repayment Behavior (0-1 scale)
   const repaymentFactor = user.repaymentScore / 100;
-
-  // Formula: 40% Completion + 30% Volume + 30% Repayment
   const score = (40 * completionRate) + (30 * volumeFactor) + (30 * repaymentFactor);
-  
   return Math.max(0, Math.min(100, Math.round(score)));
 };
 
-// Helper: Check Eligibility
 const checkEligibility = (user) => {
   return (
     user.reputationScore >= 70 &&
@@ -30,28 +20,19 @@ const checkEligibility = (user) => {
   );
 };
 
-// ==========================================
-// USER ROUTES
-// ==========================================
-
-// POST /register
 router.post('/register', async (req, res) => {
   try {
     const { walletAddress, businessName, country, businessType } = req.body;
-
     if (!walletAddress || !businessName || !country) {
       return res.status(400).json({ message: 'Missing required fields' });
     }
-
     const existingUser = await User.findOne({ walletAddress });
     if (existingUser) {
       return res.status(400).json({ message: 'Wallet already registered' });
     }
 
-    // Generate Unique ID
     let newId = generateTradeID();
     let isUnique = false;
-    
     while (!isUnique) {
       const exists = await User.findOne({ tradeId: newId });
       if (!exists) isUnique = true;
@@ -74,12 +55,10 @@ router.post('/register', async (req, res) => {
   }
 });
 
-// GET /user/:wallet
 router.get('/user/:wallet', async (req, res) => {
   try {
     const user = await User.findOne({ walletAddress: req.params.wallet });
     if (!user) return res.status(404).json({ message: 'User not found' });
-    
     const isEligible = checkEligibility(user);
     res.json({ ...user.toObject(), isEligible });
   } catch (error) {
@@ -87,17 +66,14 @@ router.get('/user/:wallet', async (req, res) => {
   }
 });
 
-// POST /simulate-transaction
 router.post('/simulate-transaction', async (req, res) => {
   try {
     const { walletAddress, amount } = req.body;
     const user = await User.findOne({ walletAddress });
     if (!user) return res.status(404).json({ message: 'User not found' });
-
     user.totalTransactions += 1;
     user.totalTradeVolume += (amount || 100);
     user.reputationScore = calculateReputation(user);
-    
     await user.save();
     res.json({ success: true, user });
   } catch (error) {
@@ -105,16 +81,13 @@ router.post('/simulate-transaction', async (req, res) => {
   }
 });
 
-// POST /simulate-dispute
 router.post('/simulate-dispute', async (req, res) => {
   try {
     const { walletAddress } = req.body;
     const user = await User.findOne({ walletAddress });
     if (!user) return res.status(404).json({ message: 'User not found' });
-
     user.disputeCount += 1;
     user.reputationScore = calculateReputation(user);
-    
     await user.save();
     res.json({ success: true, user });
   } catch (error) {
@@ -122,13 +95,11 @@ router.post('/simulate-dispute', async (req, res) => {
   }
 });
 
-// POST /simulate-funding
 router.post('/simulate-funding', async (req, res) => {
   try {
     const { walletAddress, amount } = req.body;
     const user = await User.findOne({ walletAddress });
     if (!user) return res.status(404).json({ message: 'User not found' });
-
     user.fundingReceived += (amount || 500);
     await user.save();
     res.json({ success: true, user });
@@ -137,17 +108,14 @@ router.post('/simulate-funding', async (req, res) => {
   }
 });
 
-// POST /simulate-repayment
 router.post('/simulate-repayment', async (req, res) => {
   try {
     const { walletAddress, scoreImpact } = req.body; 
     const user = await User.findOne({ walletAddress });
     if (!user) return res.status(404).json({ message: 'User not found' });
-
     const impact = parseInt(scoreImpact) || 0;
     user.repaymentScore = Math.max(0, Math.min(100, user.repaymentScore + impact));
     user.reputationScore = calculateReputation(user);
-    
     await user.save();
     res.json({ success: true, user });
   } catch (error) {
@@ -155,14 +123,9 @@ router.post('/simulate-repayment', async (req, res) => {
   }
 });
 
-// ==========================================
-// NEW ADMIN ROUTES
-// ==========================================
-
-// GET /admin/all-users - Fetch all registered users
+// Admin Routes
 router.get('/admin/all-users', async (req, res) => {
   try {
-    // Sort by newest first
     const users = await User.find().sort({ createdAt: -1 });
     res.json(users);
   } catch (error) {
@@ -171,7 +134,6 @@ router.get('/admin/all-users', async (req, res) => {
   }
 });
 
-// DELETE /admin/delete-user/:id - Delete a user by ID
 router.delete('/admin/delete-user/:id', async (req, res) => {
   try {
     await User.findByIdAndDelete(req.params.id);

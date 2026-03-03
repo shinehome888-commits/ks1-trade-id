@@ -1,63 +1,109 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import './App.css';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 const ADMIN_SECRET = 'admin123';
+const AUTO_LOGOUT_TIME = 45000; // 45 seconds
 
 function App() {
   const [view, setView] = useState('login'); 
   const [wallet, setWallet] = useState('');
+  const [phoneNumber, setPhoneNumber] = useState('');
   const [userData, setUserData] = useState(null);
   const [allUsers, setAllUsers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  
-  // Mock Ledger State (Simulated for MVP)
   const [ledger, setLedger] = useState([]);
+  
+  // Registration Mode: 'wallet' or 'phone'
+  const [regMode, setRegMode] = useState('wallet'); 
 
   const [formData, setFormData] = useState({
     businessName: '',
     country: '',
+    region: '',
+    city: '',
+    town: '',
     businessType: 'SME'
   });
+
+  // --- Auto Logout Timer Logic ---
+  const timerRef = useRef(null);
+
+  const resetTimer = () => {
+    if (timerRef.current) clearTimeout(timerRef.current);
+    if (view === 'dashboard' || view === 'admin') {
+      timerRef.current = setTimeout(() => {
+        handleLogout();
+      }, AUTO_LOGOUT_TIME);
+    }
+  };
+
+  useEffect(() => {
+    // Attach event listeners for activity
+    const events = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart'];
+    const handleActivity = () => resetTimer();
+    
+    events.forEach(evt => window.addEventListener(evt, handleActivity));
+    
+    // Initial start
+    resetTimer();
+
+    return () => {
+      events.forEach(evt => window.removeEventListener(evt, handleActivity));
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
+  }, [view]);
+
+  const handleLogout = () => {
+    setUserData(null);
+    setAllUsers([]);
+    setWallet('');
+    setPhoneNumber('');
+    setFormData({ businessName: '', country: '', region: '', city: '', town: '', businessType: 'SME' });
+    setLedger([]);
+    setView('login');
+    alert("Session expired due to inactivity. Please login again.");
+  };
 
   // Refresh Function
   const handleRefresh = async () => {
     setLoading(true);
+    resetTimer(); // Reset timer on manual refresh
     if (view === 'admin') {
       await fetchAllUsers();
     } else if (view === 'dashboard' && userData) {
       try {
-        const res = await axios.get(`${API_URL}/user/${wallet}`);
+        const identifier = userData.walletAddress || userData.phoneNumber;
+        const res = await axios.get(`${API_URL}/user/${identifier}`);
         setUserData(res.data);
-        // Simulate fetching new ledger entries based on recent actions
         addMockLedgerEntry("System Refresh", 0, "neutral");
       } catch (err) {
         setError('Session expired. Please login again.');
-        setView('login');
+        handleLogout();
       }
     }
     setLoading(false);
   };
 
-  // Helper to add mock ledger entries
   const addMockLedgerEntry = (desc, amount, type) => {
     const newEntry = {
       id: Date.now(),
       date: new Date().toLocaleDateString(),
       description: desc,
       amount: amount,
-      type: type // 'positive', 'negative', 'neutral'
+      type: type
     };
-    setLedger(prev => [newEntry, ...prev].slice(0, 10)); // Keep last 10
+    setLedger(prev => [newEntry, ...prev].slice(0, 10));
   };
 
   const handleLogin = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError('');
-    setLedger([]); // Clear ledger on new login
+    setLedger([]);
+    resetTimer();
 
     if (wallet === ADMIN_SECRET) {
       await fetchAllUsers();
@@ -67,16 +113,16 @@ function App() {
     }
 
     try {
-      const res = await axios.get(`${API_URL}/user/${wallet}`);
+      // Try login with wallet first, then phone if needed
+      let identifier = wallet || phoneNumber;
+      const res = await axios.get(`${API_URL}/user/${identifier}`);
       setUserData(res.data);
       setView('dashboard');
-      // Initial Ledger Population
       setLedger([
-        { id: 1, date: new Date().toLocaleDateString(), description: "Account Created", amount: 0, type: "neutral" },
-        { id: 2, date: new Date().toLocaleDateString(), description: "Initial Reputation Score", amount: 50, type: "neutral" }
+        { id: 1, date: new Date().toLocaleDateString(), description: "Login Successful", amount: 0, type: "neutral" }
       ]);
     } catch (err) {
-      setError('Wallet not found. Please register first.');
+      setError('ID not found. Please register first.');
     } finally {
       setLoading(false);
     }
@@ -87,11 +133,29 @@ function App() {
     setLoading(true);
     setError('');
     setLedger([]);
+    resetTimer();
+
+    const identifier = regMode === 'wallet' ? wallet : phoneNumber;
+    const identifierLabel = regMode === 'wallet' ? 'walletAddress' : 'phoneNumber';
+
+    if (!identifier) {
+      setError(regMode === 'wallet' ? 'Wallet Address required' : 'Phone Number required');
+      setLoading(false);
+      return;
+    }
+
     try {
-      const res = await axios.post(`${API_URL}/register`, {
-        walletAddress: wallet,
-        ...formData
-      });
+      const payload = {
+        [identifierLabel]: identifier,
+        businessName: formData.businessName,
+        country: formData.country,
+        region: formData.region,
+        city: formData.city,
+        town: formData.town,
+        businessType: formData.businessType
+      };
+
+      const res = await axios.post(`${API_URL}/register`, payload);
       setUserData(res.data.user);
       setView('dashboard');
       setLedger([{ id: 1, date: new Date().toLocaleDateString(), description: "Registration Complete", amount: 0, type: "neutral" }]);
@@ -104,9 +168,11 @@ function App() {
 
   const simulateAction = async (endpoint, payload, desc, amount, type) => {
     setLoading(true);
+    resetTimer();
     try {
+      const identifier = userData.walletAddress || userData.phoneNumber;
       const res = await axios.post(`${API_URL}/${endpoint}`, {
-        walletAddress: wallet,
+        [userData.walletAddress ? 'walletAddress' : 'phoneNumber']: identifier,
         ...payload
       });
       setUserData(res.data.user);
@@ -120,6 +186,7 @@ function App() {
 
   const fetchAllUsers = async () => {
     setLoading(true);
+    resetTimer();
     try {
       const res = await axios.get(`${API_URL}/admin/all-users`);
       setAllUsers(res.data);
@@ -131,7 +198,8 @@ function App() {
   };
 
   const handleDeleteUser = async (userId) => {
-    if (!window.confirm('Are you sure you want to delete this user permanently?')) return;
+    if (!window.confirm('Delete this user permanently?')) return;
+    resetTimer();
     try {
       await axios.delete(`${API_URL}/admin/delete-user/${userId}`);
       await fetchAllUsers();
@@ -144,6 +212,11 @@ function App() {
   if (view === 'login') {
     return (
       <div className="container" style={{ maxWidth: '500px', marginTop: '60px' }}>
+        {/* Shooting Stars Container */}
+        <div className="shooting-star animate" style={{ top: '10%', left: '80%', animationDelay: '0s' }}></div>
+        <div className="shooting-star animate" style={{ top: '30%', left: '60%', animationDelay: '1.5s' }}></div>
+        <div className="shooting-star animate" style={{ top: '60%', left: '90%', animationDelay: '3s' }}></div>
+
         <div className="card">
           <div className="page-header">
             <h1>KS1 Trade ID</h1>
@@ -154,7 +227,7 @@ function App() {
             <label style={{color:'var(--gold-primary)', fontWeight:'800', fontSize:'0.9rem', textTransform:'uppercase'}}>Access Dashboard</label>
             <input 
               type="text" 
-              placeholder="Enter Wallet or 'admin123'" 
+              placeholder="Enter Wallet, Phone, or 'admin123'" 
               value={wallet}
               onChange={(e) => setWallet(e.target.value)}
               required
@@ -167,10 +240,39 @@ function App() {
           <hr />
           
           <h3 style={{color:'var(--gold-primary)', fontSize:'1.2rem', textAlign:'center'}}>New Registration</h3>
+          
+          {/* Dual Registration Toggle */}
+          <div className="reg-toggle">
+            <div 
+              className={`reg-option ${regMode === 'wallet' ? 'active' : ''}`}
+              onClick={() => setRegMode('wallet')}
+            >
+              💼 Wallet (Recommended)
+            </div>
+            <div 
+              className={`reg-option ${regMode === 'phone' ? 'active' : ''}`}
+              onClick={() => setRegMode('phone')}
+            >
+              📱 Phone Number
+            </div>
+          </div>
+
           <form onSubmit={handleRegister}>
-            <input type="text" placeholder="Wallet Address" value={wallet} onChange={(e) => setWallet(e.target.value)} required />
+            {regMode === 'wallet' ? (
+              <input type="text" placeholder="Wallet Address" value={wallet} onChange={(e) => setWallet(e.target.value)} required />
+            ) : (
+              <input type="tel" placeholder="Phone Number (e.g., +233...)" value={phoneNumber} onChange={(e) => setPhoneNumber(e.target.value)} required />
+            )}
+            
             <input type="text" placeholder="Business Name" onChange={(e) => setFormData({...formData, businessName: e.target.value})} required />
+            
+            {/* Expanded Location Fields */}
             <input type="text" placeholder="Country" onChange={(e) => setFormData({...formData, country: e.target.value})} required />
+            <div className="location-grid">
+              <input type="text" placeholder="Region" onChange={(e) => setFormData({...formData, region: e.target.value})} required />
+              <input type="text" placeholder="City" onChange={(e) => setFormData({...formData, city: e.target.value})} required />
+            </div>
+            <input type="text" placeholder="Town" onChange={(e) => setFormData({...formData, town: e.target.value})} required />
             
             <select onChange={(e) => setFormData({...formData, businessType: e.target.value})}>
               <option value="SME">SME</option>
@@ -194,7 +296,6 @@ function App() {
           </form>
         </div>
         
-        {/* Footer on Login Page */}
         <footer className="global-footer">
           <div className="footer-content">
             <span className="footer-brand">© 2026 KS1 Trade ID</span>
@@ -212,6 +313,10 @@ function App() {
   if (view === 'admin') {
     return (
       <div className="container">
+        {/* Shooting Stars */}
+        <div className="shooting-star animate" style={{ top: '20%', left: '10%', animationDelay: '0.5s' }}></div>
+        <div className="shooting-star animate" style={{ top: '50%', left: '80%', animationDelay: '2s' }}></div>
+
         <div className="page-header">
           <h1>Admin Command</h1>
           <p>Powered By KS1EGF</p>
@@ -235,8 +340,8 @@ function App() {
                 <thead>
                   <tr>
                     <th>Trade ID</th>
-                    <th>Business Details</th>
-                    <th>Wallet</th>
+                    <th>Business & Location</th>
+                    <th>Contact</th>
                     <th>Score</th>
                     <th>Volume</th>
                     <th>Status</th>
@@ -246,15 +351,18 @@ function App() {
                 <tbody>
                   {allUsers.map(user => {
                     const isEligible = user.reputationScore >= 70 && user.totalTradeVolume >= 1000 && user.disputeCount < 5;
+                    const contact = user.walletAddress || user.phoneNumber;
                     return (
                       <tr key={user._id}>
                         <td><span className="trade-id-cell" style={{color:'var(--gold-primary)'}}>{user.tradeId}</span></td>
                         <td>
                           <div style={{fontWeight:'800', fontSize:'1.1rem'}}>{user.businessName}</div>
-                          <div style={{color:'var(--text-muted)', fontSize:'0.9rem'}}>{user.country} • {user.businessType}</div>
+                          <div style={{color:'var(--text-muted)', fontSize:'0.85rem'}}>
+                            {user.town}, {user.city}, {user.region}<br/>{user.country} • {user.businessType}
+                          </div>
                         </td>
-                        <td style={{fontFamily:'monospace', color:'var(--text-muted)'}}>
-                          {user.walletAddress.substring(0,6)}...{user.walletAddress.substring(38)}
+                        <td style={{fontFamily:'monospace', color:'var(--text-muted)', fontSize:'0.85rem'}}>
+                          {contact.substring(0,10)}...
                         </td>
                         <td>
                           <span style={{fontWeight:'800', fontSize:'1.2rem', color: user.reputationScore >= 70 ? 'var(--success)' : 'var(--danger)'}}>
@@ -280,7 +388,6 @@ function App() {
           )}
         </div>
 
-        {/* Footer on Admin Page */}
         <footer className="global-footer">
           <div className="footer-content">
             <span className="footer-brand">© 2026 KS1 Trade ID</span>
@@ -297,6 +404,10 @@ function App() {
   // --- VIEW: USER DASHBOARD ---
   return (
     <div className="container">
+      {/* Shooting Stars */}
+      <div className="shooting-star animate" style={{ top: '15%', left: '90%', animationDelay: '1s' }}></div>
+      <div className="shooting-star animate" style={{ top: '70%', left: '20%', animationDelay: '3.5s' }}></div>
+
       <div className="page-header">
         <h1>My Dashboard</h1>
         <p>Powered By KS1EGF</p>
@@ -315,14 +426,31 @@ function App() {
             <div style={{fontSize:'2.5rem', color:'#fff', fontWeight:'900', margin:'10px 0', fontFamily:'monospace', textShadow:'0 0 20px rgba(255,215,0,0.4)'}}>
               {userData?.tradeId}
             </div>
-            <div style={{marginTop:'15px'}}>
-              <p style={{margin:'8px 0', fontSize:'1.1rem'}}><strong style={{color:'var(--gold-primary)'}}>Business:</strong> {userData?.businessName} ({userData?.businessType})</p>
-              <p style={{margin:'8px 0', fontSize:'1.1rem'}}><strong style={{color:'var(--gold-primary)'}}>Location:</strong> {userData?.country}</p>
-              <p style={{margin:'8px 0', fontSize:'1.1rem'}}><strong style={{color:'var(--gold-primary)'}}>Wallet:</strong> <span style={{fontFamily:'monospace', fontSize:'0.9rem'}}>{userData?.walletAddress}</span></p>
+            <div style={{marginTop:'15px', lineHeight:'1.8'}}>
+              <p style={{margin:'5px 0', fontSize:'1.1rem'}}><strong style={{color:'var(--gold-primary)'}}>Business:</strong> {userData?.businessName} ({userData?.businessType})</p>
+              
+              {/* Expanded Location Display */}
+              <p style={{margin:'5px 0', fontSize:'1.1rem'}}>
+                <strong style={{color:'var(--gold-primary)'}}>Location:</strong> 
+                {userData?.town}, {userData?.city}, {userData?.region}, {userData?.country}
+              </p>
+              
+              <p style={{margin:'5px 0', fontSize:'1.1rem'}}>
+                <strong style={{color:'var(--gold-primary)'}}>Contact:</strong> 
+                <span style={{fontFamily:'monospace', fontSize:'0.9rem'}}>
+                  {userData?.walletAddress || userData?.phoneNumber}
+                </span>
+              </p>
+              
+              {/* Commission Policy Badge */}
+              <div style={{marginTop:'15px'}}>
+                <span className="badge badge-commission">
+                  ⚖️ 1% Commission Policy Applied
+                </span>
+              </div>
             </div>
           </div>
           
-          {/* Centered Funding Status Box */}
           <div className="funding-status-box">
             <div className="funding-title">Funding Status</div>
             <span className={`badge ${userData?.isEligible ? 'badge-eligible' : 'badge-not-eligible'}`} style={{fontSize:'1.3rem', padding:'12px 24px', boxShadow:'0 0 20px rgba(0,0,0,0.5)'}}>
@@ -359,7 +487,6 @@ function App() {
         </div>
       </div>
 
-      {/* Transaction Ledger */}
       <div className="ledger-container">
         <div className="ledger-title">Transaction Ledger</div>
         {ledger.length === 0 ? (
@@ -388,7 +515,6 @@ function App() {
         )}
       </div>
 
-      {/* Footer on User Page */}
       <footer className="global-footer">
         <div className="footer-content">
           <span className="footer-brand">© 2026 KS1 Trade ID</span>

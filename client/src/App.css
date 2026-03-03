@@ -26,23 +26,73 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
+  overflow-x: hidden; /* Prevent scrollbar from stars */
 }
 
-/* Ensure content pushes footer down */
 #root {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
   width: 100%;
+  position: relative;
+  z-index: 1;
 }
 
+/* --- Shooting Star Animation --- */
+.shooting-star {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  width: 4px;
+  height: 4px;
+  background: #fff;
+  border-radius: 50%;
+  box-shadow: 0 0 10px #fff, 0 0 20px #fff, 0 0 40px var(--gold-primary);
+  opacity: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.shooting-star::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  transform: translateX(-50%);
+  width: 200px;
+  height: 2px;
+  background: linear-gradient(90deg, #fff, transparent);
+  opacity: 0;
+}
+
+.shooting-star.animate {
+  animation: shoot 3s linear infinite;
+}
+
+@keyframes shoot {
+  0% {
+    transform: rotate(-45deg) translateX(0);
+    opacity: 1;
+  }
+  20% {
+    transform: rotate(-45deg) translateX(-500px);
+    opacity: 1;
+  }
+  100% {
+    transform: rotate(-45deg) translateX(-500px);
+    opacity: 0;
+  }
+}
+
+/* Container */
 .container {
   width: 100%;
   max-width: 1200px;
   padding: 2rem;
-  flex: 1; /* Pushes footer down */
+  flex: 1;
   animation: fadeIn 0.5s ease-in;
   margin: 0 auto;
+  position: relative;
+  z-index: 2;
 }
 
 @keyframes fadeIn {
@@ -50,7 +100,7 @@ body {
   to { opacity: 1; transform: translateY(0); }
 }
 
-/* --- 3D Centered Headers --- */
+/* Headers */
 .page-header {
   text-align: center;
   margin-bottom: 2.5rem;
@@ -80,7 +130,7 @@ body {
   text-shadow: 0 2px 4px rgba(0,0,0,0.5);
 }
 
-/* --- Cards --- */
+/* Cards */
 .card {
   background: var(--bg-card);
   border-radius: 16px;
@@ -100,7 +150,7 @@ body {
   background: linear-gradient(90deg, var(--gold-primary), #fff, var(--gold-primary));
 }
 
-/* --- White 3D Buttons --- */
+/* Buttons */
 .btn-gold {
   background: var(--white-btn);
   color: #0f172a;
@@ -149,10 +199,10 @@ body {
   gap: 12px;
   flex-wrap: wrap;
   margin-top: 1.5rem;
-  justify-content: center; /* Center buttons */
+  justify-content: center;
 }
 
-/* --- Inputs & Selects --- */
+/* Inputs */
 input, select {
   width: 100%;
   padding: 16px;
@@ -172,7 +222,17 @@ input:focus, select:focus {
   box-shadow: 0 0 15px var(--gold-glow);
 }
 
-/* --- Badges --- */
+/* Grid for Location Inputs */
+.location-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+@media (max-width: 768px) {
+  .location-grid { grid-template-columns: 1fr; }
+}
+
+/* Badges */
 .badge {
   padding: 8px 16px;
   border-radius: 50px;
@@ -186,8 +246,21 @@ input:focus, select:focus {
 
 .badge-eligible { background: var(--success); color: #fff; border: 2px solid #059669; }
 .badge-not-eligible { background: var(--danger); color: #fff; border: 2px solid #b91c1c; }
+.badge-commission { 
+  background: linear-gradient(135deg, var(--gold-primary), #fff); 
+  color: #000; 
+  border: 2px solid #fff;
+  font-size: 0.9rem;
+  animation: pulse 2s infinite;
+}
 
-/* --- Metrics Grid --- */
+@keyframes pulse {
+  0% { box-shadow: 0 0 0 0 rgba(255, 215, 0, 0.4); }
+  70% { box-shadow: 0 0 0 10px rgba(255, 215, 0, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(255, 215, 0, 0); }
+}
+
+/* Metrics */
 .metrics-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
@@ -228,7 +301,7 @@ input:focus, select:focus {
   display: block;
 }
 
-/* --- Funding Status Box (Centered & Stylish) --- */
+/* Funding Box */
 .funding-status-box {
   background: rgba(0,0,0,0.3);
   padding: 2rem;
@@ -260,7 +333,7 @@ input:focus, select:focus {
   border-radius: 8px;
 }
 
-/* --- Admin Table --- */
+/* Admin Table */
 .table-container {
   overflow-x: auto;
   border-radius: 12px;
@@ -274,9 +347,7 @@ table {
   min-width: 800px;
 }
 
-thead {
-  background: rgba(0,0,0,0.3);
-}
+thead { background: rgba(0,0,0,0.3); }
 
 th {
   padding: 18px;
@@ -306,7 +377,7 @@ tr:hover td { background: rgba(255,255,255,0.02); }
   letter-spacing: 1px;
 }
 
-/* --- Transaction Ledger (New) --- */
+/* Ledger */
 .ledger-container {
   margin-top: 2rem;
   background: rgba(0,0,0,0.2);
@@ -349,14 +420,16 @@ tr:hover td { background: rgba(255,255,255,0.02); }
 .txn-negative { color: var(--danger); font-weight: 700; }
 .txn-neutral { color: var(--text-muted); }
 
-/* --- Global Footer (Trademark) --- */
+/* Footer */
 .global-footer {
   width: 100%;
   background: #020617;
   border-top: 1px solid rgba(255, 215, 0, 0.2);
   padding: 2rem 1rem;
   text-align: center;
-  margin-top: auto; /* Pushes to bottom */
+  margin-top: auto;
+  position: relative;
+  z-index: 2;
 }
 
 .footer-content {
@@ -399,6 +472,32 @@ hr {
   height: 1px;
   background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
   margin: 2rem 0;
+}
+
+/* Registration Toggle */
+.reg-toggle {
+  display: flex;
+  background: rgba(0,0,0,0.3);
+  border-radius: 12px;
+  padding: 5px;
+  margin-bottom: 1.5rem;
+}
+
+.reg-option {
+  flex: 1;
+  text-align: center;
+  padding: 10px;
+  cursor: pointer;
+  border-radius: 8px;
+  font-weight: 700;
+  color: var(--text-muted);
+  transition: all 0.3s;
+}
+
+.reg-option.active {
+  background: var(--gold-primary);
+  color: #000;
+  box-shadow: 0 4px 10px rgba(255, 215, 0, 0.3);
 }
 
 @media (max-width: 768px) {

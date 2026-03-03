@@ -267,7 +267,11 @@ function App() {
           <div className="funding-status-box">
             <div className="funding-title">Funding Status</div>
             <span className={`badge ${userData?.isEligible?'badge-eligible':'badge-not-eligible'}`} style={{fontSize:'1.3rem', padding:'12px 24px'}}>{userData?.isEligible?'ELIGIBLE':'NOT ELIGIBLE'}</span>
-            <div className="funding-requirements"><div>• Score ≥ 70</div><div>• Vol ≥ $1k</div><div>• Disputes < 5</div></div>
+            <div className="funding-requirements">
+              <div>• Score ≥ 70</div>
+              <div>• Vol ≥ $1k</div>
+              <div>• Disputes &lt; 5</div>
+            </div>
           </div>
         </div>
       </div>
